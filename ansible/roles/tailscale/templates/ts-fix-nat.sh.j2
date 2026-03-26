@@ -1,0 +1,25 @@
+#!/bin/bash
+# Managed by Ansible - do not edit manually
+#
+# Ensures Tailscale exit node MASQUERADE rule exists in iptables.
+# k3s/flannel can clobber ts-postrouting, so this re-applies if missing.
+
+set -euo pipefail
+
+IFACE="{{ lan_interface | default('eth0') }}"
+MARK="0x40000/0xff0000"
+
+# Ensure ts-postrouting chain exists
+iptables -t nat -N ts-postrouting 2>/dev/null || true
+
+# Check if MASQUERADE rule exists in ts-postrouting
+if ! iptables -t nat -C ts-postrouting -o "${IFACE}" -m mark --mark "${MARK}" -j MASQUERADE 2>/dev/null; then
+    iptables -t nat -A ts-postrouting -o "${IFACE}" -m mark --mark "${MARK}" -j MASQUERADE
+    logger -t ts-fix-nat "Added MASQUERADE rule to ts-postrouting on ${IFACE}"
+fi
+
+# Check if POSTROUTING jumps to ts-postrouting
+if ! iptables -t nat -C POSTROUTING -j ts-postrouting 2>/dev/null; then
+    iptables -t nat -I POSTROUTING 1 -j ts-postrouting
+    logger -t ts-fix-nat "Added ts-postrouting jump to POSTROUTING"
+fi

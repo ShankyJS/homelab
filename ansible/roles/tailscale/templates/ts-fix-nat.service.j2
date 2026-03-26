@@ -1,0 +1,12 @@
+# Managed by Ansible - do not edit manually
+[Unit]
+Description=Fix Tailscale exit node NAT rules
+After=tailscaled.service k3s.service
+Wants=tailscaled.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ts-fix-nat.sh
+
+[Install]
+WantedBy=multi-user.target

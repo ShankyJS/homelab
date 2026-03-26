@@ -1,0 +1,19 @@
+---
+# Jetson Orin - NVIDIA Tegra (aarch64)
+
+ansible_python_interpreter: /usr/bin/python3.9
+
+# Network
+lan_interface: eth0
+lan_subnet: 192.168.50.0/24
+lan_gateway: 192.168.50.254
+
+# Tailscale
+tailscale_exit_node: true
+tailscale_advertise_routes:
+  - "192.168.50.0/24"
+
+# k3s
+k3s_role: server
+k3s_write_kubeconfig_mode: "644"
+k3s_extra_args: ""

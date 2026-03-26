@@ -1,0 +1,37 @@
+---
+- name: Create k3s config directory
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    mode: "0755"
+
+- name: Deploy k3s config file
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml
+    mode: "0644"
+  notify: Restart k3s
+
+- name: Download k3s install script
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: /tmp/k3s-install.sh
+    mode: "0755"
+  changed_when: false
+
+- name: Install k3s {{ k3s_role }}
+  ansible.builtin.command:
+    cmd: /tmp/k3s-install.sh
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version | default(omit, true) }}"
+    INSTALL_K3S_CHANNEL: "{{ k3s_channel }}"
+    INSTALL_K3S_EXEC: "{{ k3s_role }}"
+    K3S_CONFIG_FILE: /etc/rancher/k3s/config.yaml
+  register: k3s_install_result
+  changed_when: "'installed' in k3s_install_result.stderr or k3s_install_result.rc == 0"
+
+- name: Clean up install script
+  ansible.builtin.file:
+    path: /tmp/k3s-install.sh
+    state: absent
+  changed_when: false

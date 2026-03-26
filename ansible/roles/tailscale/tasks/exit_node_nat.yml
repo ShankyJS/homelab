@@ -1,0 +1,55 @@
+---
+# This fixes the issue where k3s/flannel clobbers Tailscale's ts-postrouting
+# chain in iptables NAT table, breaking exit node MASQUERADE.
+#
+# What happens without this fix:
+#   1. Client selects Jetson as exit node
+#   2. Traffic arrives on tailscale0, gets forwarded via ts-forward (works)
+#   3. Forwarded traffic leaves via eth0 with source IP 100.x.x.x (CGNAT)
+#   4. Upstream router drops it - no route back to 100.x.x.x
+#   5. Client hangs, no internet
+#
+# Root cause: k3s/flannel rebuilds POSTROUTING chain and removes the jump
+# to ts-postrouting. The MASQUERADE rule inside ts-postrouting also gets wiped.
+
+- name: Deploy ts-fix-nat script
+  ansible.builtin.template:
+    src: ts-fix-nat.sh.j2
+    dest: /usr/local/bin/ts-fix-nat.sh
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Deploy ts-fix-nat systemd service
+  ansible.builtin.template:
+    src: ts-fix-nat.service.j2
+    dest: /etc/systemd/system/ts-fix-nat.service
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Deploy ts-fix-nat systemd timer
+  ansible.builtin.template:
+    src: ts-fix-nat.timer.j2
+    dest: /etc/systemd/system/ts-fix-nat.timer
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Flush handlers to reload systemd before enabling
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start ts-fix-nat service
+  ansible.builtin.systemd:
+    name: ts-fix-nat.service
+    enabled: true
+
+- name: Enable and start ts-fix-nat timer
+  ansible.builtin.systemd:
+    name: ts-fix-nat.timer
+    enabled: true
+    state: started
+
+- name: Run ts-fix-nat now to ensure rules are in place
+  ansible.builtin.command:
+    cmd: /usr/local/bin/ts-fix-nat.sh
+  register: ts_fix_nat_result
+  changed_when: ts_fix_nat_result.rc == 0

@@ -1,3 +1,18 @@
+# Ansible
+*.retry
+# ansible/vault.yml # file is encrypted
+!ansible/vault.yml.example
+.vault-password
+
+# Kubeconfig (fetched by Ansible)
+kubeconfig/
+
+# Secrets
+*.pem
+*.key
+.env
+.env.*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

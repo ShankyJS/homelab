@@ -1,0 +1,24 @@
+---
+- name: Add Tailscale GPG key
+  ansible.builtin.get_url:
+    url: "{{ tailscale_apt_key_url }}"
+    dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    mode: "0644"
+
+- name: Add Tailscale apt repository
+  ansible.builtin.apt_repository:
+    repo: "{{ tailscale_apt_repo }}"
+    state: present
+    filename: tailscale
+
+- name: Install Tailscale
+  ansible.builtin.apt:
+    name: tailscale
+    state: present
+    update_cache: true
+
+- name: Enable and start tailscaled
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started

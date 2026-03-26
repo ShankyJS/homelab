@@ -1,0 +1,19 @@
+---
+- name: Enable and start k3s
+  ansible.builtin.systemd:
+    name: k3s
+    enabled: true
+    state: started
+
+- name: Wait for k3s to be ready
+  ansible.builtin.command:
+    cmd: k3s kubectl get nodes
+  register: k3s_nodes
+  retries: 30
+  delay: 10
+  until: k3s_nodes.rc == 0 and 'Ready' in k3s_nodes.stdout
+  changed_when: false
+
+- name: Display k3s node status
+  ansible.builtin.debug:
+    msg: "{{ k3s_nodes.stdout_lines }}"

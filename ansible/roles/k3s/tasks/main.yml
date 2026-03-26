@@ -1,0 +1,14 @@
+---
+- name: Uninstall existing k3s (clean install)
+  ansible.builtin.import_tasks: uninstall.yml
+  when: k3s_clean_install | bool
+
+- name: Install k3s
+  ansible.builtin.import_tasks: install.yml
+
+- name: Configure k3s
+  ansible.builtin.import_tasks: configure.yml
+
+- name: Fetch kubeconfig
+  ansible.builtin.import_tasks: kubeconfig.yml
+  when: k3s_fetch_kubeconfig | bool and k3s_role == 'server'

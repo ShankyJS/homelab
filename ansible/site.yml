@@ -1,0 +1,15 @@
+---
+# Full site playbook - configures everything
+# Usage: make deploy
+
+- name: Configure homelab servers
+  hosts: servers
+  become: true
+  vars_files:
+    - vault.yml
+  vars:
+    ansible_become_pass: "{{ vault_become_pass }}"
+  roles:
+    - common
+    - tailscale
+    - k3s

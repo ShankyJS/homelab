@@ -1,0 +1,28 @@
+---
+- name: Build tailscale up command arguments
+  ansible.builtin.set_fact:
+    tailscale_up_args: >-
+      --authkey={{ vault_tailscale_authkey }}
+      --operator={{ tailscale_operator }}
+      {% if tailscale_exit_node %}--advertise-exit-node{% endif %}
+      {% if tailscale_advertise_routes | length > 0 %}--advertise-routes={{ tailscale_advertise_routes | join(',') }}{% endif %}
+      {% if tailscale_accept_routes %}--accept-routes{% endif %}
+      {% if tailscale_accept_dns %}--accept-dns{% endif %}
+      --reset
+
+- name: Check current Tailscale status
+  ansible.builtin.command:
+    cmd: tailscale status --json
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+
+- name: Bring up Tailscale
+  ansible.builtin.command:
+    cmd: "tailscale up {{ tailscale_up_args }}"
+  register: tailscale_up_result
+  changed_when: "'Success' in tailscale_up_result.stderr or tailscale_up_result.rc == 0"
+  when: >
+    tailscale_status.rc != 0 or
+    (tailscale_status.stdout | from_json).BackendState != 'Running'
+  notify: Verify tailscale status

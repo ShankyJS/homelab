@@ -1,0 +1,14 @@
+---
+# Copy this file to vault.yml and encrypt with ansible-vault:
+#   cp vault.yml.example vault.yml
+#   # Edit vault.yml with real values
+#   ansible-vault encrypt vault.yml
+#
+# To edit later: ansible-vault edit vault.yml
+
+vault_become_pass: "your-sudo-password-here"
+vault_tailscale_authkey: "tskey-auth-xxxxx"
+
+# GitHub PAT for Flux bootstrap and ARC runners
+# Needs: Contents (read/write), Administration (read/write) on the homelab repo
+vault_github_token: "ghp_xxxxx"

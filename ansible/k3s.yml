@@ -1,0 +1,15 @@
+---
+# k3s-only playbook
+# Usage: make deploy-k3s
+# For clean reinstall: make deploy-k3s-clean
+
+- name: Install and configure k3s
+  hosts: servers
+  become: true
+  vars_files:
+    - vault.yml
+  vars:
+    ansible_become_pass: "{{ vault_become_pass }}"
+  roles:
+    - common
+    - k3s

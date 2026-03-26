@@ -1,0 +1,19 @@
+---
+# Tailscale role defaults
+
+# Tailscale package repo
+tailscale_apt_key_url: "https://pkgs.tailscale.com/stable/ubuntu/jammy.noarmor.gpg"
+tailscale_apt_repo: "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu jammy main"
+
+# Exit node configuration
+tailscale_exit_node: false
+tailscale_advertise_routes: []
+
+# Accept routes from other nodes
+tailscale_accept_routes: false
+
+# Accept DNS from tailnet
+tailscale_accept_dns: true
+
+# Operator user (can run tailscale without sudo)
+tailscale_operator: "{{ ansible_user }}"

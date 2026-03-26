@@ -1,0 +1,11 @@
+# Managed by Ansible - do not edit manually
+[Unit]
+Description=Periodically check Tailscale NAT rules
+
+[Timer]
+OnBootSec=90
+OnUnitActiveSec=5min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

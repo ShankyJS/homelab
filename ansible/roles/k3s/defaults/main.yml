@@ -1,0 +1,42 @@
+---
+# k3s role defaults
+
+# Version to install (empty = latest stable)
+k3s_version: ""
+
+# Role: server or agent
+k3s_role: server
+
+# Install channel (stable, latest, testing)
+k3s_channel: stable
+
+# Write kubeconfig with this file mode
+k3s_write_kubeconfig_mode: "644"
+
+# Extra TLS SANs for the k3s API server certificate
+# Automatically includes ansible_host (e.g. Tailscale IP) for remote access
+k3s_tls_san:
+  - "{{ ansible_host }}"
+
+# Extra arguments passed to k3s server/agent
+k3s_extra_args: ""
+
+# Disable components (e.g., traefik, servicelb)
+k3s_disable:
+  - traefik
+
+# Flannel backend (vxlan, host-gw, wireguard-native, none)
+k3s_flannel_backend: vxlan
+
+# Cluster CIDR
+k3s_cluster_cidr: "10.42.0.0/16"
+
+# Service CIDR
+k3s_service_cidr: "10.43.0.0/16"
+
+# Whether to uninstall existing k3s before installing
+k3s_clean_install: false
+
+# Where to copy kubeconfig locally after install
+k3s_fetch_kubeconfig: true
+k3s_local_kubeconfig_dir: "{{ playbook_dir }}/../kubeconfig"

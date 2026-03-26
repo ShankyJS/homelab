@@ -1,0 +1,38 @@
+---
+# Role defaults - override in host_vars/group_vars
+
+# Packages to install on all hosts
+common_packages:
+  - curl
+  - wget
+  - git
+  - htop
+  - jq
+  - unzip
+  - python3
+  - python3-pip
+  - open-iscsi
+  - nfs-common
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+
+# Sysctl settings required for k3s + tailscale exit node
+common_sysctl:
+  net.ipv4.ip_forward: 1
+  net.ipv6.conf.all.forwarding: 1
+  net.bridge.bridge-nf-call-iptables: 1
+  net.bridge.bridge-nf-call-ip6tables: 1
+  fs.inotify.max_user_instances: 512
+  fs.inotify.max_user_watches: 524288
+
+# Kernel modules to load
+common_kernel_modules:
+  - br_netfilter
+  - overlay
+  - ip_tables
+  - iptable_nat
+  - iptable_mangle
+  - nf_nat
+  - xt_MASQUERADE
+  - nf_conntrack

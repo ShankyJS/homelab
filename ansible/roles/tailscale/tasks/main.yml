@@ -1,0 +1,10 @@
+---
+- name: Install Tailscale
+  ansible.builtin.import_tasks: install.yml
+
+- name: Configure and bring up Tailscale
+  ansible.builtin.import_tasks: configure.yml
+
+- name: Setup exit node NAT fix
+  ansible.builtin.import_tasks: exit_node_nat.yml
+  when: tailscale_exit_node | bool
