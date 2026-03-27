@@ -1,0 +1,17 @@
+---
+# Flux CD role defaults
+
+# GitHub repository for Flux to watch
+flux_github_owner: "ShankyJS"
+flux_github_repo: "homelab"
+flux_github_branch: "main"
+
+# Path within the repo where k8s manifests live
+flux_path: "k8s"
+
+# Namespace for flux-system components
+flux_namespace: "flux-system"
+
+# ARC runner secret namespace
+flux_arc_secret_namespace: "arc-runners"
+flux_arc_secret_name: "arc-github-secret"

@@ -40,7 +40,7 @@ VAULT_ARGS :=
 VAULT_FLAG := --ask-vault-pass
 endif
 
-.PHONY: help build lint setup deploy deploy-tailscale deploy-k3s deploy-k3s-clean ping shell k vault-encrypt vault-edit clean
+.PHONY: help build lint setup deploy deploy-tailscale deploy-k3s deploy-k3s-clean deploy-flux ping shell k vault-encrypt vault-edit clean
 
 help: ## Show this help message
 	@echo "Homelab Ansible - Available Commands"
@@ -58,7 +58,7 @@ build: ## Build the Ansible Docker image
 	@$(DOCKER) build -t $(ANSIBLE_IMAGE) .
 	@echo "Image '$(ANSIBLE_IMAGE)' built successfully"
 
-deploy: build ## Run full site playbook (common + tailscale + k3s)
+deploy: build ## Run full site playbook (common + tailscale + k3s + flux)
 	@echo "Running full site playbook..."
 	@$(DOCKER_RUN) $(VAULT_ARGS) $(ANSIBLE_IMAGE) site.yml $(VAULT_FLAG)
 
@@ -73,6 +73,10 @@ deploy-k3s: build ## Run k3s-only playbook
 deploy-k3s-clean: build ## Run k3s playbook with clean reinstall
 	@echo "Running k3s playbook (clean reinstall)..."
 	@$(DOCKER_RUN) $(VAULT_ARGS) $(ANSIBLE_IMAGE) k3s.yml $(VAULT_FLAG) -e k3s_clean_install=true
+
+deploy-flux: build ## Bootstrap FluxCD on the k3s cluster
+	@echo "Running FluxCD bootstrap playbook..."
+	@$(DOCKER_RUN) $(VAULT_ARGS) $(ANSIBLE_IMAGE) flux.yml $(VAULT_FLAG)
 
 ping: build ## Ping all hosts to verify SSH connectivity
 	@$(DOCKER_RUN) \

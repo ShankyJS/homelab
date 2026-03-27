@@ -1,0 +1,75 @@
+---
+- name: Check if flux CLI is installed
+  ansible.builtin.command:
+    cmd: flux version --client
+  register: flux_version_check
+  changed_when: false
+  failed_when: false
+
+- name: Install flux CLI
+  when: flux_version_check.rc != 0
+  block:
+    - name: Download flux install script
+      ansible.builtin.get_url:
+        url: https://fluxcd.io/install.sh
+        dest: /tmp/flux-install.sh
+        mode: "0755"
+
+    - name: Run flux install script
+      ansible.builtin.command:
+        cmd: /tmp/flux-install.sh
+      environment:
+        FLUX_VERSION: "latest"
+
+    - name: Clean up flux install script
+      ansible.builtin.file:
+        path: /tmp/flux-install.sh
+        state: absent
+
+- name: Check if flux is already bootstrapped
+  ansible.builtin.command:
+    cmd: k3s kubectl get namespace {{ flux_namespace }}
+  register: flux_ns_check
+  changed_when: false
+  failed_when: false
+
+- name: Bootstrap flux
+  when: flux_ns_check.rc != 0
+  ansible.builtin.command:
+    cmd: >-
+      flux bootstrap github
+      --owner={{ flux_github_owner }}
+      --repository={{ flux_github_repo }}
+      --branch={{ flux_github_branch }}
+      --path={{ flux_path }}
+      --personal
+      --token-auth
+  environment:
+    GITHUB_TOKEN: "{{ vault_github_token }}"
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Create arc-runners namespace
+  ansible.builtin.command:
+    cmd: k3s kubectl create namespace {{ flux_arc_secret_namespace }}
+  register: arc_ns_result
+  changed_when: arc_ns_result.rc == 0
+  failed_when: arc_ns_result.rc != 0 and 'already exists' not in arc_ns_result.stderr
+
+- name: Create ARC GitHub PAT secret
+  ansible.builtin.command:
+    cmd: >-
+      k3s kubectl create secret generic {{ flux_arc_secret_name }}
+      --namespace={{ flux_arc_secret_namespace }}
+      --from-literal=github_token={{ vault_github_token }}
+      --dry-run=client -o yaml
+  register: arc_secret_manifest
+  changed_when: false
+  no_log: true
+
+- name: Apply ARC GitHub PAT secret
+  ansible.builtin.command:
+    cmd: k3s kubectl apply -f -
+    stdin: "{{ arc_secret_manifest.stdout }}"
+  changed_when: "'configured' in arc_secret_apply.stdout or 'created' in arc_secret_apply.stdout"
+  register: arc_secret_apply
+  no_log: true

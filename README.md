@@ -34,7 +34,6 @@ Ansible playbooks, IaC and more to install and configure my Homelab environment.
 │   ├── tailscale.yml            # Tailscale-only playbook
 │   └── k3s.yml                  # k3s-only playbook
 ├── kubeconfig/                  # Fetched kubeconfigs (gitignored)
-└── .vault-password              # Vault password file (gitignored, optional)
 ```
 
 ## Getting Started
