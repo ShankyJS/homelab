@@ -1,0 +1,22 @@
+name: Test Jetson Runner
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: jetson-arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System info
+        run: |
+          echo "--- Runner info ---"
+          uname -a
+          echo "Architecture: $(uname -m)"
+          echo "OS: $(cat /etc/os-release | grep PRETTY_NAME)"
+          echo "CPU cores: $(nproc)"
+          echo "Memory: $(free -h | grep Mem | awk '{print $2}')"
+          echo "--- Success ---"
