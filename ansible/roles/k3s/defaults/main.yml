@@ -11,7 +11,7 @@ k3s_role: server
 k3s_channel: stable
 
 # Write kubeconfig with this file mode
-k3s_write_kubeconfig_mode: "644"
+k3s_write_kubeconfig_mode: "600"
 
 # Extra TLS SANs for the k3s API server certificate
 # Automatically includes ansible_host (e.g. Tailscale IP) for remote access
@@ -27,6 +27,12 @@ k3s_disable:
 
 # Flannel backend (vxlan, host-gw, wireguard-native, none)
 k3s_flannel_backend: vxlan
+
+# Disable built-in network policy controller
+k3s_disable_network_policy: false
+
+# Disable kube-proxy
+k3s_disable_kube_proxy: false
 
 # Cluster CIDR
 k3s_cluster_cidr: "10.42.0.0/16"

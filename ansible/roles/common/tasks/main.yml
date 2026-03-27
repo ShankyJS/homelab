@@ -6,12 +6,48 @@
     update_cache: true
     cache_valid_time: 3600
 
+- name: Ensure iptables-legacy is installed
+  ansible.builtin.apt:
+    name: iptables
+    state: present
+
+- name: Check current iptables alternative
+  ansible.builtin.command: update-alternatives --query iptables
+  register: iptables_alternatives
+  changed_when: false
+  failed_when: false
+
+- name: Switch to iptables-legacy (required for k3s on Tegra/Ubuntu 20.04)
+  ansible.builtin.alternatives:
+    name: iptables
+    path: /usr/sbin/iptables-legacy
+  when:
+    - iptables_alternatives.rc == 0
+    - "'/usr/sbin/iptables-legacy' not in (iptables_alternatives.stdout | regex_search('Value:.*'))"
+
+- name: Switch to ip6tables-legacy
+  ansible.builtin.alternatives:
+    name: ip6tables
+    path: /usr/sbin/ip6tables-legacy
+  when:
+    - iptables_alternatives.rc == 0
+  failed_when: false
+
 - name: Load kernel modules
   community.general.modprobe:
     name: "{{ item }}"
     state: present
   loop: "{{ common_kernel_modules }}"
+  register: module_results
   ignore_errors: true
+
+- name: Report failed kernel modules
+  ansible.builtin.debug:
+    msg: "WARNING: Failed to load kernel module '{{ item.item }}' - may be built-in or unavailable on this kernel"
+  loop: "{{ module_results.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.failed | default(false)
 
 - name: Persist kernel modules across reboots
   ansible.builtin.lineinfile:

@@ -19,7 +19,7 @@
       ansible.builtin.command:
         cmd: /tmp/flux-install.sh
       environment:
-        FLUX_VERSION: "latest"
+        FLUX_VERSION: "{{ flux_version }}"
 
     - name: Clean up flux install script
       ansible.builtin.file:

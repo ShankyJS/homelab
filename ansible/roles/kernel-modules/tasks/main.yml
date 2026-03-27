@@ -1,0 +1,210 @@
+---
+# Compile missing netfilter/ipset kernel modules on Jetson Tegra
+# Based on: https://forums.developer.nvidia.com/t/successful-kernel-tweaks-to-support-kubernetes-and-calico-on-the-jetson-orin-nan/358833
+
+- name: Check if kernel modules are already working
+  ansible.builtin.shell: |
+    modprobe ip_set_hash_ip 2>/dev/null && \
+    modprobe xt_nfacct 2>/dev/null && \
+    ipset list -name 2>/dev/null
+    echo $?
+  register: modules_check
+  changed_when: false
+  failed_when: false
+
+- name: Skip build if modules already work
+  ansible.builtin.debug:
+    msg: "Kernel modules already working, skipping build"
+  when: modules_check.rc == 0 and modules_check.stdout_lines[-1] == "0"
+
+- name: Build and install kernel modules
+  when: modules_check.rc != 0 or modules_check.stdout_lines[-1] != "0"
+  block:
+    - name: Install build prerequisites
+      ansible.builtin.apt:
+        name: "{{ kernel_modules_build_packages }}"
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Get running kernel version
+      ansible.builtin.command: uname -r
+      register: kernel_version
+      changed_when: false
+
+    - name: Create build directory
+      ansible.builtin.file:
+        path: "{{ kernel_modules_build_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Check if BSP sources already downloaded
+      ansible.builtin.stat:
+        path: "{{ kernel_modules_build_dir }}/public_sources.tbz2"
+      register: bsp_archive
+
+    - name: Download L4T BSP public sources
+      ansible.builtin.get_url:
+        url: "{{ kernel_modules_bsp_sources_url }}"
+        dest: "{{ kernel_modules_build_dir }}/public_sources.tbz2"
+        mode: "0644"
+        timeout: 300
+      when: not bsp_archive.stat.exists
+
+    - name: Check if sources already extracted
+      ansible.builtin.stat:
+        path: "{{ kernel_modules_build_dir }}/Linux_for_Tegra"
+      register: l4t_dir
+
+    - name: Extract BSP sources
+      ansible.builtin.shell: |
+        cd {{ kernel_modules_build_dir }}
+        tar xjf public_sources.tbz2
+      when: not l4t_dir.stat.exists
+
+    - name: Find and extract kernel source tarball
+      ansible.builtin.shell: |
+        cd {{ kernel_modules_build_dir }}/Linux_for_Tegra/source/public
+        # The kernel source is in a tarball inside the BSP
+        KERNEL_TAR=$(ls kernel_src.tbz2 2>/dev/null || ls *kernel*.tbz2 2>/dev/null | head -1)
+        if [ -z "$KERNEL_TAR" ]; then
+          echo "ERROR: No kernel source tarball found"
+          ls -la
+          exit 1
+        fi
+        if [ ! -d "{{ kernel_modules_build_dir }}/kernel_src" ]; then
+          mkdir -p {{ kernel_modules_build_dir }}/kernel_src
+          tar xjf "$KERNEL_TAR" -C {{ kernel_modules_build_dir }}/kernel_src
+        fi
+      args:
+        creates: "{{ kernel_modules_build_dir }}/kernel_src"
+
+    - name: Find kernel source directory
+      ansible.builtin.shell: |
+        # Look for the Kconfig file which indicates kernel source root
+        find {{ kernel_modules_build_dir }}/kernel_src -maxdepth 3 -name "Kconfig" -path "*/kernel*" | head -1 | xargs dirname
+      register: kernel_src_dir
+      changed_when: false
+
+    - name: Verify kernel source found
+      ansible.builtin.assert:
+        that:
+          - kernel_src_dir.stdout | length > 0
+        fail_msg: "Could not find kernel source directory"
+
+    - name: Copy running kernel config
+      ansible.builtin.shell: |
+        zcat /proc/config.gz > {{ kernel_src_dir.stdout }}/.config
+      args:
+        creates: "{{ kernel_src_dir.stdout }}/.config"
+
+    # Enable missing modules in config
+    - name: Enable builtin kernel configs
+      ansible.builtin.shell: |
+        cd {{ kernel_src_dir.stdout }}
+        scripts/config --enable {{ item }}
+      loop: "{{ kernel_modules_builtin_configs }}"
+      changed_when: false
+
+    - name: Enable module kernel configs
+      ansible.builtin.shell: |
+        cd {{ kernel_src_dir.stdout }}
+        scripts/config --module {{ item }}
+      loop: "{{ kernel_modules_enable_configs }}"
+      changed_when: false
+
+    # Ensure LOCALVERSION matches running kernel
+    - name: Set LOCALVERSION to match running kernel
+      ansible.builtin.script: set-localversion.sh
+      environment:
+        KERNEL_SRC_DIR: "{{ kernel_src_dir.stdout }}"
+      register: localversion_result
+      changed_when: false
+
+    - name: Show LOCALVERSION info
+      ansible.builtin.debug:
+        msg: "{{ localversion_result.stdout }}"
+
+    - name: Apply config with olddefconfig
+      ansible.builtin.shell: |
+        cd {{ kernel_src_dir.stdout }}
+        make olddefconfig
+      changed_when: false
+
+    - name: Prepare kernel build (generate headers/scripts)
+      ansible.builtin.shell: |
+        cd {{ kernel_src_dir.stdout }}
+        make -j"$(nproc)" modules_prepare
+      changed_when: false
+
+    - name: Compile targeted kernel modules
+      ansible.builtin.script: compile-targeted-modules.sh
+      environment:
+        KERNEL_SRC_DIR: "{{ kernel_src_dir.stdout }}"
+        BUILD_SUBDIRS: "{{ kernel_modules_build_subdirs | join(' ') }}"
+      register: modules_compile
+      changed_when: true
+      timeout: 900  # 15 min max for targeted .ko builds
+
+    - name: Find compiled module files
+      ansible.builtin.script: find-compiled-modules.sh
+      environment:
+        BUILD_DIR: "{{ kernel_src_dir.stdout }}"
+        BUILD_SUBDIRS: "{{ kernel_modules_build_subdirs | join(' ') }}"
+      register: compiled_modules
+      changed_when: false
+
+    - name: Show compiled modules
+      ansible.builtin.debug:
+        msg: "{{ compiled_modules.stdout_lines }}"
+
+    - name: Install compiled modules to running kernel
+      ansible.builtin.script: install-compiled-modules.sh
+      environment:
+        BUILD_DIR: "{{ kernel_src_dir.stdout }}"
+        BUILD_SUBDIRS: "{{ kernel_modules_build_subdirs | join(' ') }}"
+      register: install_result
+      changed_when: "'Installing:' in install_result.stdout"
+
+    - name: Show installed modules
+      ansible.builtin.debug:
+        msg: "{{ install_result.stdout_lines }}"
+      when: install_result.stdout_lines | length > 0
+
+    - name: Run depmod to register new modules
+      ansible.builtin.command: depmod -a
+      changed_when: true
+
+# Load modules (runs regardless of whether we just built or they already existed)
+- name: Load required kernel modules
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ kernel_modules_load_list }}"
+  register: module_load_results
+  ignore_errors: true
+
+- name: Report module load results
+  ansible.builtin.debug:
+    msg: "{{ 'OK' if not item.failed else 'FAILED' }}: {{ item.item }}"
+  loop: "{{ module_load_results.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Persist modules across reboots
+  ansible.builtin.lineinfile:
+    path: /etc/modules-load.d/k8s-netfilter.conf
+    line: "{{ item }}"
+    create: true
+    mode: "0644"
+  loop: "{{ kernel_modules_load_list }}"
+
+- name: Verify ipset works
+  ansible.builtin.command: ipset list -name
+  register: ipset_verify
+  changed_when: false
+  failed_when: false
+
+- name: Show ipset verification
+  ansible.builtin.debug:
+    msg: "ipset check: {{ 'WORKING' if ipset_verify.rc == 0 else 'FAILED - ' + ipset_verify.stderr }}"

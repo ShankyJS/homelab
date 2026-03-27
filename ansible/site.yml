@@ -11,6 +11,7 @@
     ansible_become_pass: "{{ vault_become_pass }}"
   roles:
     - common
+    - kernel-modules
     - tailscale
     - k3s
     - flux

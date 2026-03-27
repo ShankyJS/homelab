@@ -1,0 +1,64 @@
+---
+# kernel-modules role defaults
+# Compiles missing netfilter/ipset kernel modules on Jetson Tegra
+
+# L4T version (must match `cat /etc/nv_tegra_release`)
+kernel_modules_l4t_version: "35.5.0"
+
+# BSP public sources URL for L4T R35.5.0
+kernel_modules_bsp_sources_url: "https://developer.nvidia.com/downloads/embedded/l4t/r35_release_v5.0/sources/public_sources.tbz2"
+
+# Where to build on the Jetson
+kernel_modules_build_dir: "/usr/src/tegra-modules-build"
+
+# Kernel configs to enable (as modules)
+kernel_modules_enable_configs:
+  # ipset support (fixes "Kernel error received: Invalid argument")
+  - IP_SET
+  - IP_SET_HASH_IP
+  - IP_SET_HASH_NET
+  - IP_SET_HASH_NETPORTNET
+
+  # netfilter matches/targets needed by kube-proxy
+  - NETFILTER_XT_TARGET_CT
+  - NETFILTER_XT_MATCH_RPFILTER
+  - NETFILTER_XT_MATCH_NFACCT
+  - IP_NF_MATCH_RPFILTER
+  - IP6_NF_MATCH_RPFILTER
+  - NETFILTER_NETLINK_LOG
+  - NETFILTER_NETLINK_ACCT
+
+# Builtin configs (--enable instead of --module)
+kernel_modules_builtin_configs:
+  - IP_SET
+
+# Modules to load after install
+kernel_modules_load_list:
+  - ip_set
+  - ip_set_hash_ip
+  - ip_set_hash_net
+  - ip_set_hash_netportnet
+  - xt_CT
+  - xt_rpfilter
+  - xt_nfacct
+  - ipt_rpfilter
+  - ip6t_rpfilter
+  - nfnetlink_log
+  - nfnetlink_acct
+
+# Kernel source subdirectories to compile (instead of full `make modules`)
+# These contain all the netfilter/ipset modules we need
+kernel_modules_build_subdirs:
+  - net/netfilter
+  - net/ipv4/netfilter
+  - net/ipv6/netfilter
+
+# Build prerequisites (apt packages)
+kernel_modules_build_packages:
+  - build-essential
+  - bc
+  - flex
+  - bison
+  - libssl-dev
+  - libelf-dev
+  - ipset

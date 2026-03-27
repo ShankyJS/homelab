@@ -1,0 +1,182 @@
+---
+# Diagnostic playbook for k3s ClusterIP routing issues
+# Run with: make diagnose
+- name: Diagnose k3s networking on Jetson
+  hosts: servers
+  become: true
+  gather_facts: true
+  vars_files:
+    - vault.yml
+  vars:
+    ansible_become_pass: "{{ vault_become_pass }}"
+  tasks:
+    # --- Kernel info ---
+    - name: Get kernel version
+      ansible.builtin.command: uname -r
+      register: kernel_version
+      changed_when: false
+
+    - name: Show kernel version
+      ansible.builtin.debug:
+        msg: "Kernel: {{ kernel_version.stdout }}"
+
+    # --- Kernel modules check ---
+    - name: Check which required kernel modules are loaded
+      ansible.builtin.shell: |
+        for mod in br_netfilter overlay ip_tables iptable_nat iptable_mangle iptable_filter nf_nat nf_conntrack xt_MASQUERADE xt_nat nf_nat_masquerade_ipv4 nf_conntrack_ipv4; do
+          if lsmod | grep -qw "$mod"; then
+            echo "LOADED: $mod"
+          elif modprobe "$mod" 2>/dev/null && lsmod | grep -qw "$mod"; then
+            echo "LOADED (just loaded): $mod"
+          else
+            echo "MISSING: $mod"
+          fi
+        done
+      register: kernel_modules
+      changed_when: false
+
+    - name: Show kernel module status
+      ansible.builtin.debug:
+        msg: "{{ kernel_modules.stdout_lines }}"
+
+    # --- Check if modules are built-in vs missing ---
+    - name: Check for built-in kernel modules
+      ansible.builtin.shell: |
+        KVER=$(uname -r)
+        for mod in ip_tables iptable_nat iptable_filter nf_nat nf_conntrack xt_MASQUERADE; do
+          if grep -q "^$mod\$" /lib/modules/$KVER/modules.builtin 2>/dev/null; then
+            echo "BUILTIN: $mod"
+          elif find /lib/modules/$KVER -name "${mod}.ko*" 2>/dev/null | grep -q .; then
+            echo "MODULE: $mod"
+          else
+            echo "NOT FOUND: $mod"
+          fi
+        done
+      register: module_types
+      changed_when: false
+
+    - name: Show module built-in vs loadable
+      ansible.builtin.debug:
+        msg: "{{ module_types.stdout_lines }}"
+
+    # --- iptables variant check ---
+    - name: Check iptables version and mode
+      ansible.builtin.shell: |
+        echo "--- iptables binary ---"
+        which iptables
+        ls -la $(which iptables)
+        echo ""
+        echo "--- iptables version ---"
+        iptables --version
+        echo ""
+        echo "--- alternatives ---"
+        update-alternatives --query iptables 2>/dev/null || echo "No alternatives configured"
+        echo ""
+        echo "--- iptables-legacy available? ---"
+        which iptables-legacy 2>/dev/null && iptables-legacy --version 2>/dev/null || echo "iptables-legacy NOT found"
+        echo ""
+        echo "--- iptables-nft available? ---"
+        which iptables-nft 2>/dev/null && iptables-nft --version 2>/dev/null || echo "iptables-nft NOT found"
+      register: iptables_info
+      changed_when: false
+
+    - name: Show iptables info
+      ansible.builtin.debug:
+        msg: "{{ iptables_info.stdout_lines }}"
+
+    # --- iptables NAT rules ---
+    - name: Check iptables NAT rules (KUBE-SERVICES chain)
+      ansible.builtin.shell: |
+        echo "=== iptables (current default) ==="
+        iptables -t nat -L KUBE-SERVICES -n 2>&1 | head -30 || echo "No KUBE-SERVICES chain"
+        echo ""
+        echo "=== iptables rule count ==="
+        iptables -t nat -L -n 2>/dev/null | wc -l
+        echo ""
+        echo "=== iptables-legacy NAT (if available) ==="
+        iptables-legacy -t nat -L KUBE-SERVICES -n 2>&1 | head -30 || echo "iptables-legacy not available or no chain"
+        echo ""
+        echo "=== iptables-legacy rule count ==="
+        iptables-legacy -t nat -L -n 2>/dev/null | wc -l || echo "N/A"
+        echo ""
+        echo "=== nft list tables ==="
+        nft list tables 2>&1 || echo "nft not available"
+      register: nat_rules
+      changed_when: false
+
+    - name: Show NAT rules
+      ansible.builtin.debug:
+        msg: "{{ nat_rules.stdout_lines }}"
+
+    # --- k3s service status ---
+    - name: Check k3s service status
+      ansible.builtin.shell: |
+        systemctl is-active k3s 2>/dev/null || echo "k3s not running"
+        echo ""
+        echo "--- k3s server logs (last 50 lines, filtered for proxy/iptables) ---"
+        journalctl -u k3s --no-pager -n 200 2>/dev/null | grep -iE 'proxy|iptables|kube-proxy|nftables|service|CLUSTERIP|conntrack' | tail -50 || echo "No matching log entries"
+      register: k3s_status
+      changed_when: false
+
+    - name: Show k3s status
+      ansible.builtin.debug:
+        msg: "{{ k3s_status.stdout_lines }}"
+
+    # --- Pod and service connectivity test ---
+    - name: Check node and pod status
+      ansible.builtin.shell: |
+        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        echo "=== Nodes ==="
+        k3s kubectl get nodes -o wide 2>&1 || echo "Cannot reach API"
+        echo ""
+        echo "=== All pods ==="
+        k3s kubectl get pods -A -o wide 2>&1 || echo "Cannot list pods"
+        echo ""
+        echo "=== Services ==="
+        k3s kubectl get svc -A 2>&1 || echo "Cannot list services"
+        echo ""
+        echo "=== Endpoints ==="
+        k3s kubectl get endpoints -A 2>&1 || echo "Cannot list endpoints"
+      register: k8s_status
+      changed_when: false
+
+    - name: Show k8s status
+      ansible.builtin.debug:
+        msg: "{{ k8s_status.stdout_lines }}"
+
+    # --- Connectivity test ---
+    - name: Test ClusterIP connectivity from host
+      ansible.builtin.shell: |
+        echo "=== curl to kubernetes API ClusterIP ==="
+        curl -sk --connect-timeout 5 https://10.43.0.1:443/healthz 2>&1 || echo "FAILED: Cannot reach 10.43.0.1:443"
+        echo ""
+        echo "=== curl to localhost:6443 (direct API) ==="
+        curl -sk --connect-timeout 5 https://127.0.0.1:6443/healthz 2>&1 || echo "FAILED: Cannot reach localhost:6443"
+      register: connectivity
+      changed_when: false
+
+    - name: Show connectivity results
+      ansible.builtin.debug:
+        msg: "{{ connectivity.stdout_lines }}"
+
+    # --- Summary ---
+    - name: Diagnostic summary
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+          DIAGNOSTIC SUMMARY
+          ============================================
+          Kernel: {{ kernel_version.stdout }}
+
+          If iptables --version shows "nf_tables" but kube-proxy rules
+          only appear in iptables-legacy, the fix is to switch the
+          system default to iptables-legacy:
+
+            update-alternatives --set iptables /usr/sbin/iptables-legacy
+            update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
+
+          Then restart k3s: systemctl restart k3s
+
+          If kernel modules are MISSING (not BUILTIN), the Tegra kernel
+          may need a different approach (Cilium eBPF replacing kube-proxy).
+          ============================================

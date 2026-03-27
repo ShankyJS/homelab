@@ -40,7 +40,7 @@ VAULT_ARGS :=
 VAULT_FLAG := --ask-vault-pass
 endif
 
-.PHONY: help build lint setup deploy deploy-tailscale deploy-k3s deploy-k3s-clean deploy-flux ping shell k vault-encrypt vault-edit clean
+.PHONY: help build lint setup deploy deploy-tailscale deploy-k3s deploy-k3s-clean deploy-flux diagnose ping shell k vault-encrypt vault-edit clean
 
 help: ## Show this help message
 	@echo "Homelab Ansible - Available Commands"
@@ -77,6 +77,10 @@ deploy-k3s-clean: build ## Run k3s playbook with clean reinstall
 deploy-flux: build ## Bootstrap FluxCD on the k3s cluster
 	@echo "Running FluxCD bootstrap playbook..."
 	@$(DOCKER_RUN) $(VAULT_ARGS) $(ANSIBLE_IMAGE) flux.yml $(VAULT_FLAG)
+
+diagnose: build ## Run networking diagnostics on the Jetson
+	@echo "Running diagnostics..."
+	@$(DOCKER_RUN) $(VAULT_ARGS) $(ANSIBLE_IMAGE) diagnose.yml $(VAULT_FLAG)
 
 ping: build ## Ping all hosts to verify SSH connectivity
 	@$(DOCKER_RUN) \
