@@ -7,6 +7,7 @@
   become: true
   vars:
     ansible_become_pass: "{{ lookup('env', 'BECOME_PASS') }}"
+    ansible_ssh_pass: "{{ lookup('env', 'BECOME_PASS') }}"
     github_token: "{{ lookup('env', 'GITHUB_TOKEN') }}"
     op_sa_token: "{{ lookup('env', 'OP_SA_TOKEN') }}"
   roles:

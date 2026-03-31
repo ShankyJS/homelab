@@ -41,19 +41,30 @@ endif
 # Docker TTY detection: use -it for interactive terminals, -i only for CI/pipes
 DOCKER_TTY := $(shell [ -t 0 ] && echo "-it" || echo "-i")
 
-# Docker run base command - mounts ansible dir, SSH known_hosts, and forwards SSH agent
+# SSH mounts: only mount known_hosts and SSH agent socket when available (local dev)
+# In CI (DinD runner), these don't exist — password auth is used instead
+SSH_MOUNTS :=
+ifneq ($(wildcard $(SSH_DIR)/known_hosts),)
+  SSH_MOUNTS += -v $(SSH_DIR)/known_hosts:/root/.ssh/known_hosts:ro
+endif
+ifneq ($(wildcard $(SSH_AUTH_SOCKET)),)
+  SSH_MOUNTS += -v $(SSH_AUTH_SOCKET):/tmp/ssh-agent.sock:ro -e SSH_AUTH_SOCK=/tmp/ssh-agent.sock
+endif
+
+# Docker run base command - mounts ansible dir and kubeconfig, SSH mounts conditional
 # Secrets are passed as env vars (never mounted as files)
 DOCKER_RUN := $(DOCKER) run --rm $(DOCKER_TTY) \
 	-v $(shell pwd)/$(ANSIBLE_DIR):/ansible \
 	-v $(shell pwd)/kubeconfig:/kubeconfig \
-	-v $(SSH_DIR)/known_hosts:/root/.ssh/known_hosts:ro \
-	-v $(SSH_AUTH_SOCKET):/tmp/ssh-agent.sock:ro \
-	-e SSH_AUTH_SOCK=/tmp/ssh-agent.sock \
+	$(SSH_MOUNTS) \
 	-e ANSIBLE_FORCE_COLOR=1 \
 	-e BECOME_PASS='$(BECOME_PASS)' \
 	-e GITHUB_TOKEN='$(GITHUB_TOKEN)' \
 	-e TAILSCALE_AUTHKEY='$(TAILSCALE_AUTHKEY)' \
 	-e OP_SA_TOKEN='$(OP_SA_TOKEN)'
+
+# Extra ansible-playbook args (used by CI to pass -e ansible_ssh_pass=... etc.)
+ANSIBLE_EXTRA ?=
 
 .PHONY: help build lint deploy deploy-tailscale deploy-k3s deploy-k3s-clean deploy-flux diagnose ping shell k clean
 
@@ -72,27 +83,27 @@ build: ## Build the Ansible Docker image
 
 deploy: build ## Run full site playbook (common + tailscale + k3s + flux)
 	@echo "Running full site playbook..."
-	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) site.yml
+	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) site.yml $(ANSIBLE_EXTRA)
 
 deploy-tailscale: build ## Run Tailscale-only playbook
 	@echo "Running Tailscale playbook..."
-	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) tailscale.yml
+	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) tailscale.yml $(ANSIBLE_EXTRA)
 
 deploy-k3s: build ## Run k3s-only playbook
 	@echo "Running k3s playbook..."
-	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) k3s.yml
+	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) k3s.yml $(ANSIBLE_EXTRA)
 
 deploy-k3s-clean: build ## Run k3s playbook with clean reinstall
 	@echo "Running k3s playbook (clean reinstall)..."
-	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) k3s.yml -e k3s_clean_install=true
+	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) k3s.yml -e k3s_clean_install=true $(ANSIBLE_EXTRA)
 
 deploy-flux: build ## Bootstrap FluxCD on the k3s cluster
 	@echo "Running FluxCD bootstrap playbook..."
-	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) flux.yml
+	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) flux.yml $(ANSIBLE_EXTRA)
 
 diagnose: build ## Run networking diagnostics on the Jetson
 	@echo "Running diagnostics..."
-	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) diagnose.yml
+	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) diagnose.yml $(ANSIBLE_EXTRA)
 
 ping: build ## Ping all hosts to verify SSH connectivity
 	@$(DOCKER_RUN) \

@@ -7,6 +7,7 @@
   become: true
   vars:
     ansible_become_pass: "{{ lookup('env', 'BECOME_PASS') }}"
+    ansible_ssh_pass: "{{ lookup('env', 'BECOME_PASS') }}"
     tailscale_authkey: "{{ lookup('env', 'TAILSCALE_AUTHKEY') }}"
   roles:
     - common

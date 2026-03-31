@@ -31,9 +31,5 @@ spec:
     runnerScaleSetName: "jetson-arm64"
     maxRunners: 3
     minRunners: 0
-    template:
-      spec:
-        containers:
-          - name: runner
-            image: ghcr.io/actions/actions-runner:latest
-            command: ["/home/runner/run.sh"]
+    containerMode:
+      type: dind

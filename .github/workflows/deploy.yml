@@ -1,0 +1,74 @@
+name: Deploy Homelab
+
+on:
+  workflow_dispatch:
+    inputs:
+      playbook:
+        description: "Playbook to run"
+        required: true
+        default: "site.yml"
+        type: choice
+        options:
+          - site.yml
+          - k3s.yml
+          - flux.yml
+          - tailscale.yml
+          - diagnose.yml
+      extra_args:
+        description: "Extra ansible-playbook arguments (e.g. --tags common)"
+        required: false
+        default: ""
+        type: string
+      k3s_clean:
+        description: "Destroy and reinstall k3s (only applies to k3s.yml / site.yml)"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  deploy:
+    runs-on: jetson-arm64
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Load secrets from 1Password
+        uses: 1password/load-secrets-action@92467eb28f72e8255933372f1e0707c567ce2259 # v4
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          BECOME_PASS: op://homelab/jetson_root_password/password
+          GITHUB_TOKEN: op://homelab/flux_cd_token_github/credential
+          TAILSCALE_AUTHKEY: op://homelab/jetson_tailscale_auth_key/password
+          OP_SA_TOKEN: op://homelab/1password_sa_jetson_k3s/credential
+
+      - name: Determine make target
+        id: target
+        run: |
+          PLAYBOOK="${{ inputs.playbook }}"
+          CLEAN="${{ inputs.k3s_clean }}"
+
+          case "${PLAYBOOK}" in
+            site.yml)       TARGET="deploy" ;;
+            k3s.yml)        TARGET="deploy-k3s" ;;
+            flux.yml)       TARGET="deploy-flux" ;;
+            tailscale.yml)  TARGET="deploy-tailscale" ;;
+            diagnose.yml)   TARGET="diagnose" ;;
+            *)              echo "::error::Unknown playbook: ${PLAYBOOK}" && exit 1 ;;
+          esac
+
+          # Override to clean target if requested
+          if [ "${CLEAN}" = "true" ] && [ "${TARGET}" = "deploy-k3s" ]; then
+            TARGET="deploy-k3s-clean"
+          fi
+
+          echo "target=${TARGET}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Make target: ${TARGET}"
+
+      - name: Run Ansible via Docker
+        env:
+          BECOME_PASS: ${{ env.BECOME_PASS }}
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+          TAILSCALE_AUTHKEY: ${{ env.TAILSCALE_AUTHKEY }}
+          OP_SA_TOKEN: ${{ env.OP_SA_TOKEN }}
+        run: |
+          make ${{ steps.target.outputs.target }} \
+            ANSIBLE_EXTRA="${{ inputs.extra_args }}"
