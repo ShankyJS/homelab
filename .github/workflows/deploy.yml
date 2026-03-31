@@ -40,6 +40,9 @@ jobs:
           TAILSCALE_AUTHKEY: op://homelab/jetson_tailscale_auth_key/password
           OP_SA_TOKEN: op://homelab/1password_sa_jetson_k3s/credential
 
+      - name: Install make
+        run: apt-get update -qq && apt-get install -y -qq make
+
       - name: Determine make target
         id: target
         run: |
