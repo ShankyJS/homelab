@@ -1,0 +1,11 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # Flux self-management (managed by flux bootstrap — do not edit flux-system/ contents)
+  - flux-system
+  # Flux Kustomization resources that define the reconciliation layers.
+  # Actual manifests live in subdirs and are only reconciled by these pointers.
+  - infrastructure.yaml
+  - cluster-secrets.yaml
+  - apps.yaml
