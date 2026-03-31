@@ -5,10 +5,11 @@
 - name: Configure homelab servers
   hosts: servers
   become: true
-  vars_files:
-    - vault.yml
   vars:
-    ansible_become_pass: "{{ vault_become_pass }}"
+    ansible_become_pass: "{{ lookup('env', 'BECOME_PASS') }}"
+    github_token: "{{ lookup('env', 'GITHUB_TOKEN') }}"
+    tailscale_authkey: "{{ lookup('env', 'TAILSCALE_AUTHKEY') }}"
+    op_sa_token: "{{ lookup('env', 'OP_SA_TOKEN') }}"
   roles:
     - common
     - kernel-modules

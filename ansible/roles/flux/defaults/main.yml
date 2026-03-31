@@ -15,6 +15,6 @@ flux_version: "2.8.3"
 # Namespace for flux-system components
 flux_namespace: "flux-system"
 
-# ARC runner secret namespace
-flux_arc_secret_namespace: "arc-runners"
-flux_arc_secret_name: "arc-github-secret"
+# External Secrets Operator - 1Password seed secret
+eso_namespace: "eso"
+eso_op_secret_name: "onepassword-sa-token"

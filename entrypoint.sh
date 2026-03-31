@@ -1,8 +1,4 @@
 #!/bin/sh
-# If VAULT_PASSWORD env var is set, create a vault password script
-if [ -n "$VAULT_PASSWORD" ]; then
-    printf '#!/bin/sh\nprintf "%%s" "$VAULT_PASSWORD"\n' > /tmp/vault-pass-env.sh
-    chmod +x /tmp/vault-pass-env.sh
-fi
-
+# Secrets are passed as env vars from the Makefile (sourced from 1Password CLI or CI env).
+# No vault files needed.
 exec ansible-playbook "$@"

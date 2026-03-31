@@ -2,7 +2,7 @@
 - name: Build tailscale up command arguments
   ansible.builtin.set_fact:
     tailscale_up_args: >-
-      --authkey={{ vault_tailscale_authkey }}
+      --authkey={{ tailscale_authkey }}
       --operator={{ tailscale_operator }}
       {% if tailscale_exit_node %}--advertise-exit-node{% endif %}
       {% if tailscale_advertise_routes | length > 0 %}--advertise-routes={{ tailscale_advertise_routes | join(',') }}{% endif %}

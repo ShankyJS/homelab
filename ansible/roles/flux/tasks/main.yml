@@ -45,31 +45,32 @@
       --personal
       --token-auth
   environment:
-    GITHUB_TOKEN: "{{ vault_github_token }}"
+    GITHUB_TOKEN: "{{ github_token }}"
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
 
-- name: Create arc-runners namespace
+# --- 1Password Service Account token (seed secret for External Secrets Operator) ---
+- name: Create external-secrets namespace
   ansible.builtin.command:
-    cmd: k3s kubectl create namespace {{ flux_arc_secret_namespace }}
-  register: arc_ns_result
-  changed_when: arc_ns_result.rc == 0
-  failed_when: arc_ns_result.rc != 0 and 'already exists' not in arc_ns_result.stderr
+    cmd: k3s kubectl create namespace {{ eso_namespace }}
+  register: eso_ns_result
+  changed_when: eso_ns_result.rc == 0
+  failed_when: eso_ns_result.rc != 0 and 'already exists' not in eso_ns_result.stderr
 
-- name: Create ARC GitHub PAT secret
+- name: Create 1Password SA token seed secret
   ansible.builtin.command:
     cmd: >-
-      k3s kubectl create secret generic {{ flux_arc_secret_name }}
-      --namespace={{ flux_arc_secret_namespace }}
-      --from-literal=github_token={{ vault_github_token }}
+      k3s kubectl create secret generic {{ eso_op_secret_name }}
+      --namespace={{ eso_namespace }}
+      --from-literal=token={{ op_sa_token }}
       --dry-run=client -o yaml
-  register: arc_secret_manifest
+  register: op_seed_secret_manifest
   changed_when: false
   no_log: true
 
-- name: Apply ARC GitHub PAT secret
+- name: Apply 1Password SA token seed secret
   ansible.builtin.command:
     cmd: k3s kubectl apply -f -
-    stdin: "{{ arc_secret_manifest.stdout }}"
-  changed_when: "'configured' in arc_secret_apply.stdout or 'created' in arc_secret_apply.stdout"
-  register: arc_secret_apply
+    stdin: "{{ op_seed_secret_manifest.stdout }}"
+  register: op_seed_secret_apply
+  changed_when: "'configured' in op_seed_secret_apply.stdout or 'created' in op_seed_secret_apply.stdout"
   no_log: true

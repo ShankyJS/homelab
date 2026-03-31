@@ -5,10 +5,8 @@
   hosts: servers
   become: true
   gather_facts: true
-  vars_files:
-    - vault.yml
   vars:
-    ansible_become_pass: "{{ vault_become_pass }}"
+    ansible_become_pass: "{{ lookup('env', 'BECOME_PASS') }}"
   tasks:
     # --- Kernel info ---
     - name: Get kernel version

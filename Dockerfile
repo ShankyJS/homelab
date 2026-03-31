@@ -5,7 +5,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-client \
     sshpass \
     git \
-    vim-tiny \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Ansible (pin ansible-core<2.18 for Python 3.8 target support on Ubuntu 20.04)
