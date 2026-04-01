@@ -1,0 +1,34 @@
+name: Build Runner Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "runner/**"
+  workflow_dispatch:
+
+env:
+  REGISTRY: zot.zot.svc.cluster.local:5000
+  IMAGE_NAME: actions-runner-custom
+
+jobs:
+  build:
+    runs-on: jetson-arm64
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Build runner image
+        run: |
+          docker build -t "${REGISTRY}/${IMAGE_NAME}:latest" \
+                       -t "${REGISTRY}/${IMAGE_NAME}:${GITHUB_SHA::8}" \
+                       runner/
+
+      - name: Push to Zot registry
+        run: |
+          docker push "${REGISTRY}/${IMAGE_NAME}:latest"
+          docker push "${REGISTRY}/${IMAGE_NAME}:${GITHUB_SHA::8}"
+
+      - name: Verify image in registry
+        run: |
+          curl -s "http://${REGISTRY}/v2/_catalog" || true
+          curl -s "http://${REGISTRY}/v2/${IMAGE_NAME}/tags/list" || true
