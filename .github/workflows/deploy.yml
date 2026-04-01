@@ -25,6 +25,9 @@ on:
         default: false
         type: boolean
 
+env:
+  ANSIBLE_IMAGE: homelab-ansible
+
 jobs:
   deploy:
     runs-on: jetson-arm64
@@ -40,38 +43,40 @@ jobs:
           TAILSCALE_AUTHKEY: op://homelab/jetson_tailscale_auth_key/password
           OP_SA_TOKEN: op://homelab/1password_sa_jetson_k3s/credential
 
-      - name: Install make
-        run: apt-get update -qq && apt-get install -y -qq make
+      - name: Build Ansible image
+        run: docker build -t "${ANSIBLE_IMAGE}" .
 
-      - name: Determine make target
-        id: target
+      - name: Determine playbook
+        id: playbook
         run: |
           PLAYBOOK="${{ inputs.playbook }}"
           CLEAN="${{ inputs.k3s_clean }}"
+          EXTRA="${{ inputs.extra_args }}"
 
-          case "${PLAYBOOK}" in
-            site.yml)       TARGET="deploy" ;;
-            k3s.yml)        TARGET="deploy-k3s" ;;
-            flux.yml)       TARGET="deploy-flux" ;;
-            tailscale.yml)  TARGET="deploy-tailscale" ;;
-            diagnose.yml)   TARGET="diagnose" ;;
-            *)              echo "::error::Unknown playbook: ${PLAYBOOK}" && exit 1 ;;
-          esac
-
-          # Override to clean target if requested
-          if [ "${CLEAN}" = "true" ] && [ "${TARGET}" = "deploy-k3s" ]; then
-            TARGET="deploy-k3s-clean"
+          # Add clean install flag if requested
+          if [ "${CLEAN}" = "true" ] && echo "${PLAYBOOK}" | grep -qE '^(site|k3s)\.yml$'; then
+            EXTRA="-e k3s_clean_install=true ${EXTRA}"
           fi
 
-          echo "target=${TARGET}" >> "$GITHUB_OUTPUT"
-          echo "::notice::Make target: ${TARGET}"
+          echo "playbook=${PLAYBOOK}" >> "$GITHUB_OUTPUT"
+          echo "extra=${EXTRA}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Playbook: ${PLAYBOOK}, Extra: ${EXTRA}"
 
-      - name: Run Ansible via Docker
+      - name: Run Ansible playbook
         env:
           BECOME_PASS: ${{ env.BECOME_PASS }}
           GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
           TAILSCALE_AUTHKEY: ${{ env.TAILSCALE_AUTHKEY }}
           OP_SA_TOKEN: ${{ env.OP_SA_TOKEN }}
         run: |
-          make ${{ steps.target.outputs.target }} \
-            ANSIBLE_EXTRA="${{ inputs.extra_args }}"
+          docker run --rm -i \
+            -v "${GITHUB_WORKSPACE}/ansible:/ansible" \
+            -v "${GITHUB_WORKSPACE}/kubeconfig:/kubeconfig" \
+            -e ANSIBLE_FORCE_COLOR=1 \
+            -e BECOME_PASS \
+            -e GITHUB_TOKEN \
+            -e TAILSCALE_AUTHKEY \
+            -e OP_SA_TOKEN \
+            "${ANSIBLE_IMAGE}" \
+            ${{ steps.playbook.outputs.playbook }} \
+            ${{ steps.playbook.outputs.extra }}

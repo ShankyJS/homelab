@@ -37,10 +37,20 @@ spec:
   values:
     image:
       repository: ghcr.io/project-zot/zot-linux-arm64
-      tag: v2.1.2
+      tag: v2.1.15
     service:
       type: ClusterIP
       port: 5000
-    persistence:
-      enabled: true
-      size: 10Gi
+    httpGet:
+      scheme: HTTP
+      port: 5000
+    # Give Zot more time to start (default failureThreshold=3 is too aggressive)
+    startupProbe:
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      failureThreshold: 10
+    persistence: true
+    pvc:
+      create: true
+      accessModes: ["ReadWriteOnce"]
+      storage: 10Gi
