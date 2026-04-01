@@ -12,6 +12,14 @@
     mode: "0644"
   notify: Restart k3s
 
+- name: Deploy k3s private registry config
+  ansible.builtin.template:
+    src: registries.yaml.j2
+    dest: /etc/rancher/k3s/registries.yaml
+    mode: "0644"
+  when: k3s_registry_mirrors | length > 0
+  notify: Restart k3s
+
 - name: Download k3s install script
   ansible.builtin.get_url:
     url: https://get.k3s.io

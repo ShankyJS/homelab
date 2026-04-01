@@ -1,0 +1,11 @@
+# Managed by Ansible - do not edit manually
+# k3s private registry configuration
+# https://docs.k3s.io/installation/private-registry
+mirrors:
+{% for mirror in k3s_registry_mirrors %}
+  "{{ mirror.name }}":
+    endpoint:
+{% for ep in mirror.endpoints %}
+      - "{{ ep }}"
+{% endfor %}
+{% endfor %}

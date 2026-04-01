@@ -46,3 +46,10 @@ k3s_clean_install: false
 # Where to copy kubeconfig locally after install
 k3s_fetch_kubeconfig: true
 k3s_local_kubeconfig_dir: "{{ playbook_dir }}/../kubeconfig"
+
+# Private registry mirrors (for in-cluster registries like Zot)
+# Each entry: { name: "registry:port", endpoints: ["http://..."] }
+k3s_registry_mirrors:
+  - name: "zot.zot.svc.cluster.local:5000"
+    endpoints:
+      - "http://zot.zot.svc.cluster.local:5000"
