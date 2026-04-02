@@ -1,0 +1,61 @@
+---
+- name: Enable and start Syncthing service for {{ syncthing_user }}
+  ansible.builtin.systemd:
+    name: "syncthing@{{ syncthing_user }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Wait for Syncthing to initialize config
+  ansible.builtin.wait_for:
+    path: "/home/{{ syncthing_user }}/.local/state/syncthing/config.xml"
+    state: present
+    timeout: 30
+
+- name: Set Syncthing GUI listen address
+  become: true
+  become_user: "{{ syncthing_user }}"
+  ansible.builtin.command:
+    cmd: "syncthing cli config gui raw-address set {{ syncthing_gui_address }}"
+  changed_when: true
+  notify: Restart syncthing
+
+- name: Set Syncthing GUI username
+  become: true
+  become_user: "{{ syncthing_user }}"
+  ansible.builtin.command:
+    cmd: "syncthing cli config gui user set {{ syncthing_gui_user }}"
+  changed_when: true
+  no_log: true
+  when: syncthing_gui_user | default('') | length > 0
+  notify: Restart syncthing
+
+- name: Set Syncthing GUI password
+  become: true
+  become_user: "{{ syncthing_user }}"
+  ansible.builtin.command:
+    cmd: "syncthing cli config gui password set {{ syncthing_gui_password }}"
+  changed_when: true
+  no_log: true
+  when: syncthing_gui_password | default('') | length > 0
+  notify: Restart syncthing
+
+- name: Check if shankyjs-m2 device already exists
+  become: true
+  become_user: "{{ syncthing_user }}"
+  ansible.builtin.command:
+    cmd: "syncthing cli config devices list"
+  register: syncthing_devices
+  changed_when: false
+  when: syncthing_m2_device_id | default('') | length > 0
+
+- name: Add shankyjs-m2 device
+  become: true
+  become_user: "{{ syncthing_user }}"
+  ansible.builtin.command:
+    cmd: "syncthing cli config devices add --device-id {{ syncthing_m2_device_id }} --name shankyjs-m2"
+  when:
+    - syncthing_m2_device_id | default('') | length > 0
+    - syncthing_m2_device_id not in (syncthing_devices.stdout | default(''))
+  no_log: true
+  notify: Restart syncthing

@@ -14,6 +14,9 @@ OP_BECOME_PASS_REF   := op://homelab/jetson_root_password/password
 OP_GITHUB_TOKEN_REF  := op://homelab/flux_cd_token_github/credential
 OP_TAILSCALE_REF     := op://homelab/jetson_tailscale_auth_key/password
 OP_SA_TOKEN_REF      := op://homelab/1password_sa_jetson_k3s/credential
+OP_SYNCTHING_USER_REF := op://homelab/syncthing_jetson/username
+OP_SYNCTHING_PASS_REF := op://homelab/syncthing_jetson/password
+OP_SYNCTHING_M2_DEVICE_ID_REF := op://homelab/syncthing_jetson/shankyjs-m2-device-id
 
 # Secret resolution: env vars > 1Password CLI
 # In CI, set these env vars directly (from OP_SERVICE_ACCOUNT_TOKEN + op CLI or GitHub secrets)
@@ -35,6 +38,21 @@ endif
 ifndef OP_SA_TOKEN
   ifneq ($(shell command -v op 2>/dev/null),)
     OP_SA_TOKEN := $(shell op read '$(OP_SA_TOKEN_REF)' 2>/dev/null)
+  endif
+endif
+ifndef SYNCTHING_GUI_USER
+  ifneq ($(shell command -v op 2>/dev/null),)
+    SYNCTHING_GUI_USER := $(shell op read '$(OP_SYNCTHING_USER_REF)' 2>/dev/null)
+  endif
+endif
+ifndef SYNCTHING_GUI_PASSWORD
+  ifneq ($(shell command -v op 2>/dev/null),)
+    SYNCTHING_GUI_PASSWORD := $(shell op read '$(OP_SYNCTHING_PASS_REF)' 2>/dev/null)
+  endif
+endif
+ifndef SYNCTHING_M2_DEVICE_ID
+  ifneq ($(shell command -v op 2>/dev/null),)
+    SYNCTHING_M2_DEVICE_ID := $(shell op read '$(OP_SYNCTHING_M2_DEVICE_ID_REF)' 2>/dev/null)
   endif
 endif
 
@@ -61,7 +79,10 @@ DOCKER_RUN := $(DOCKER) run --rm $(DOCKER_TTY) \
 	-e BECOME_PASS='$(BECOME_PASS)' \
 	-e GITHUB_TOKEN='$(GITHUB_TOKEN)' \
 	-e TAILSCALE_AUTHKEY='$(TAILSCALE_AUTHKEY)' \
-	-e OP_SA_TOKEN='$(OP_SA_TOKEN)'
+	-e OP_SA_TOKEN='$(OP_SA_TOKEN)' \
+	-e SYNCTHING_GUI_USER='$(SYNCTHING_GUI_USER)' \
+	-e SYNCTHING_GUI_PASSWORD='$(SYNCTHING_GUI_PASSWORD)' \
+	-e SYNCTHING_M2_DEVICE_ID='$(SYNCTHING_M2_DEVICE_ID)'
 
 # Extra ansible-playbook args (used by CI to pass -e ansible_ssh_pass=... etc.)
 ANSIBLE_EXTRA ?=
@@ -74,7 +95,7 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Secrets are fetched automatically from 1Password CLI."
-	@echo "In CI, set env vars: BECOME_PASS, GITHUB_TOKEN, TAILSCALE_AUTHKEY, OP_SA_TOKEN"
+	@echo "In CI, set env vars: BECOME_PASS, GITHUB_TOKEN, TAILSCALE_AUTHKEY, OP_SA_TOKEN, SYNCTHING_GUI_USER, SYNCTHING_GUI_PASSWORD"
 
 build: ## Build the Ansible Docker image
 	@echo "Building Ansible Docker image..."

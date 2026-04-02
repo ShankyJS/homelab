@@ -1,0 +1,13 @@
+---
+# Syncthing role defaults
+
+# APT repository
+syncthing_apt_key_url: "https://syncthing.net/release-key.gpg"
+syncthing_apt_repo: "deb [signed-by=/etc/apt/keyrings/syncthing-archive-keyring.gpg] https://apt.syncthing.net/ syncthing stable-v2"
+
+# Syncthing runs as a user-level systemd service
+# Set this to the user that should run syncthing
+syncthing_user: "{{ ansible_user }}"
+
+# GUI listen address (default: localhost only)
+syncthing_gui_address: "0.0.0.0:8384"

@@ -11,9 +11,13 @@
     github_token: "{{ lookup('env', 'GITHUB_TOKEN') }}"
     tailscale_authkey: "{{ lookup('env', 'TAILSCALE_AUTHKEY') }}"
     op_sa_token: "{{ lookup('env', 'OP_SA_TOKEN') }}"
+    syncthing_gui_user: "{{ lookup('env', 'SYNCTHING_GUI_USER') }}"
+    syncthing_gui_password: "{{ lookup('env', 'SYNCTHING_GUI_PASSWORD') }}"
+    syncthing_m2_device_id: "{{ lookup('env', 'SYNCTHING_M2_DEVICE_ID') }}"
   roles:
     - common
     - kernel-modules
     - tailscale
+    - syncthing
     - k3s
     - flux

@@ -1,0 +1,6 @@
+---
+- name: Install Syncthing
+  ansible.builtin.import_tasks: install.yml
+
+- name: Configure Syncthing
+  ansible.builtin.import_tasks: configure.yml

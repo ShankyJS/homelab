@@ -1,0 +1,33 @@
+---
+- name: Ensure apt keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Add Syncthing release PGP key
+  ansible.builtin.get_url:
+    url: "{{ syncthing_apt_key_url }}"
+    dest: /etc/apt/keyrings/syncthing-archive-keyring.gpg
+    mode: "0644"
+
+- name: Add Syncthing apt repository
+  ansible.builtin.apt_repository:
+    repo: "{{ syncthing_apt_repo }}"
+    state: present
+    filename: syncthing
+
+- name: Pin Syncthing repo to prevent distro packages from taking priority
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/syncthing.pref
+    content: |
+      Package: *
+      Pin: origin apt.syncthing.net
+      Pin-Priority: 990
+    mode: "0644"
+
+- name: Install Syncthing
+  ansible.builtin.apt:
+    name: syncthing
+    state: present
+    update_cache: true
