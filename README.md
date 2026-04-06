@@ -1,5 +1,7 @@
 # homelab
 
+Me pide leche y en la boca te la doy pero no te apeche.
+
 Ansible-driven infrastructure automation for a single-node Kubernetes homelab running on an NVIDIA Jetson Orin NX. Everything runs from Docker containers — no local Ansible install needed.
 
 ## Infrastructure
