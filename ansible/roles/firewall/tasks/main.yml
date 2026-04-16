@@ -1,0 +1,63 @@
+---
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Set UFW default incoming policy
+  community.general.ufw:
+    direction: incoming
+    default: "{{ firewall_default_incoming }}"
+
+- name: Set UFW default outgoing policy
+  community.general.ufw:
+    direction: outgoing
+    default: "{{ firewall_default_outgoing }}"
+
+# Allow k3s Pod CIDR (critical — prevents breaking pod networking)
+- name: Allow Pod CIDR ({{ firewall_pod_cidr }})
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ firewall_pod_cidr }}"
+    comment: "k3s Pod CIDR"
+
+# Allow k3s Service CIDR (critical — prevents breaking service networking)
+- name: Allow Service CIDR ({{ firewall_service_cidr }})
+  community.general.ufw:
+    rule: allow
+    from_ip: "{{ firewall_service_cidr }}"
+    comment: "k3s Service CIDR"
+
+# Apply core firewall rules
+- name: Apply core firewall rules
+  community.general.ufw:
+    rule: "{{ item.rule }}"
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ firewall_rules }}"
+
+# Apply optional Syncthing rules
+- name: Apply Syncthing firewall rules
+  community.general.ufw:
+    rule: "{{ item.rule }}"
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ firewall_syncthing_rules }}"
+  when: enable_syncthing | bool
+
+# Disable IPv6 in UFW — Jetson kernel lacks the ip6tables 'rt' match module,
+# which causes ufw-init to fail on before6.rules.
+- name: Disable IPv6 in UFW
+  ansible.builtin.lineinfile:
+    path: /etc/ufw/ufw.conf
+    regexp: '^IPV6='
+    line: 'IPV6=no'
+  notify: restart ufw
+
+# Enable UFW (must be last to avoid lockout)
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+  when: firewall_enabled | bool

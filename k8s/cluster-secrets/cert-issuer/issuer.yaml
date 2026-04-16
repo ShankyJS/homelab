@@ -1,0 +1,10 @@
+---
+# ClusterIssuer using a self-signed CA keypair stored in the ca-key-secret Secret.
+# The Secret is created by the ExternalSecret (fetched from 1Password).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-ca
+spec:
+  ca:
+    secretName: ca-key-secret

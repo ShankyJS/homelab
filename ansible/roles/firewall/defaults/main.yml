@@ -1,0 +1,62 @@
+---
+# Firewall (UFW) role defaults
+
+# Enable UFW
+firewall_enabled: true
+
+# Default policies
+firewall_default_incoming: deny
+firewall_default_outgoing: allow
+
+# k3s cluster networking CIDRs (must match k3s role defaults)
+firewall_pod_cidr: "10.42.0.0/16"
+firewall_service_cidr: "10.43.0.0/16"
+
+# Core rules (always applied)
+firewall_rules:
+  # SSH — prevent lockout
+  - rule: allow
+    port: "22"
+    proto: tcp
+    comment: "SSH"
+  # HTTPS (Traefik ingress)
+  - rule: allow
+    port: "443"
+    proto: tcp
+    comment: "HTTPS Traefik"
+  # HTTP (Traefik ingress, redirect to HTTPS)
+  - rule: allow
+    port: "80"
+    proto: tcp
+    comment: "HTTP Traefik"
+  # k3s API server (localhost only for security)
+  - rule: allow
+    port: "6443"
+    proto: tcp
+    comment: "k3s API"
+  # Flannel VXLAN
+  - rule: allow
+    port: "8472"
+    proto: udp
+    comment: "Flannel VXLAN"
+  # Kubelet metrics
+  - rule: allow
+    port: "10250"
+    proto: tcp
+    comment: "Kubelet metrics"
+
+# Optional Syncthing rules (only applied when enable_syncthing is true)
+enable_syncthing: false
+firewall_syncthing_rules:
+  - rule: allow
+    port: "22000"
+    proto: tcp
+    comment: "Syncthing TCP"
+  - rule: allow
+    port: "22000"
+    proto: udp
+    comment: "Syncthing UDP"
+  - rule: allow
+    port: "21027"
+    proto: udp
+    comment: "Syncthing discovery"

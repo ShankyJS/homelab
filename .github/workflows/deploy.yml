@@ -13,6 +13,8 @@ on:
           - k3s.yml
           - flux.yml
           - tailscale.yml
+          - tailscale-dns.yml
+          - firewall.yml
           - diagnose.yml
       extra_args:
         description: "Extra ansible-playbook arguments (e.g. --tags common)"
@@ -42,6 +44,7 @@ jobs:
           GITHUB_TOKEN: op://homelab/flux_cd_token_github/credential
           TAILSCALE_AUTHKEY: op://homelab/jetson_tailscale_auth_key/password
           OP_SA_TOKEN: op://homelab/1password_sa_jetson_k3s/credential
+          TAILSCALE_API_TOKEN: op://homelab/tailscale_api_token_shankyjs/credential
 
       - name: Build Ansible image
         run: docker build -t "${ANSIBLE_IMAGE}" .
@@ -68,6 +71,7 @@ jobs:
           GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
           TAILSCALE_AUTHKEY: ${{ env.TAILSCALE_AUTHKEY }}
           OP_SA_TOKEN: ${{ env.OP_SA_TOKEN }}
+          TAILSCALE_API_TOKEN: ${{ env.TAILSCALE_API_TOKEN }}
         run: |
           docker run --rm -i \
             -v "${GITHUB_WORKSPACE}/ansible:/ansible" \
@@ -77,6 +81,7 @@ jobs:
             -e GITHUB_TOKEN \
             -e TAILSCALE_AUTHKEY \
             -e OP_SA_TOKEN \
+            -e TAILSCALE_API_TOKEN \
             "${ANSIBLE_IMAGE}" \
             ${{ steps.playbook.outputs.playbook }} \
             ${{ steps.playbook.outputs.extra }}

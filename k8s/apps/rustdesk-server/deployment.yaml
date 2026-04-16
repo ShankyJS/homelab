@@ -1,0 +1,117 @@
+---
+# hbbs - RustDesk ID/Rendezvous server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hbbs
+  namespace: rustdesk
+  labels:
+    app.kubernetes.io/name: rustdesk-server
+    app.kubernetes.io/component: hbbs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rustdesk-server
+      app.kubernetes.io/component: hbbs
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rustdesk-server
+        app.kubernetes.io/component: hbbs
+    spec:
+      containers:
+        - name: hbbs
+          image: rustdesk/rustdesk-server:latest
+          command: ["hbbs"]
+          ports:
+            - name: rendezvous
+              containerPort: 21116
+              hostPort: 21116
+              protocol: TCP
+            - name: rendezvous-udp
+              containerPort: 21116
+              hostPort: 21116
+              protocol: UDP
+            - name: nat-test
+              containerPort: 21115
+              hostPort: 21115
+              protocol: UDP
+          volumeMounts:
+            - name: data
+              mountPath: /root
+            - name: server-keys
+              mountPath: /root/id_ed25519
+              subPath: id_ed25519
+              readOnly: true
+            - name: server-keys
+              mountPath: /root/id_ed25519.pub
+              subPath: id_ed25519.pub
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: rustdesk-server-data
+        - name: server-keys
+          secret:
+            secretName: rustdesk-server-keys
+---
+# hbbr - RustDesk Relay server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hbbr
+  namespace: rustdesk
+  labels:
+    app.kubernetes.io/name: rustdesk-server
+    app.kubernetes.io/component: hbbr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rustdesk-server
+      app.kubernetes.io/component: hbbr
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rustdesk-server
+        app.kubernetes.io/component: hbbr
+    spec:
+      containers:
+        - name: hbbr
+          image: rustdesk/rustdesk-server:latest
+          command: ["hbbr"]
+          ports:
+            - name: relay
+              containerPort: 21117
+              hostPort: 21117
+              protocol: TCP
+          volumeMounts:
+            - name: server-keys
+              mountPath: /root/id_ed25519
+              subPath: id_ed25519
+              readOnly: true
+            - name: server-keys
+              mountPath: /root/id_ed25519.pub
+              subPath: id_ed25519.pub
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+      volumes:
+        - name: server-keys
+          secret:
+            secretName: rustdesk-server-keys

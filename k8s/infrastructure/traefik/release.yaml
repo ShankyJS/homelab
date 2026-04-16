@@ -1,0 +1,70 @@
+---
+# Traefik Ingress Controller — deployed separately since k3s built-in Traefik is disabled.
+# This gives us full control over the version and configuration.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: traefik
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  interval: 1h
+  url: https://traefik.github.io/charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: traefik
+      sourceRef:
+        kind: HelmRepository
+        name: traefik
+        namespace: traefik
+      version: ">=28.0.0"
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    # Single-node homelab: use hostPort so Traefik binds directly to node ports
+    ports:
+      web:
+        port: 8000
+        exposedPort: 80
+        hostPort: 80
+      websecure:
+        port: 8443
+        exposedPort: 443
+        hostPort: 443
+    # Allow scheduling on control-plane node
+    tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        effect: NoSchedule
+    # Use DaemonSet for single-node (ensures one instance on the node)
+    deployment:
+      kind: DaemonSet
+    # Don't create a LoadBalancer service (we use hostPort)
+    service:
+      enabled: false
+    # Enable Traefik dashboard on a secure port (optional, internal only)
+    ingressRoute:
+      dashboard:
+        enabled: false
+    # Default TLS cert for all ingresses
+    tlsStore:
+      default:
+        defaultCertificate:
+          secretName: wildcard-tls

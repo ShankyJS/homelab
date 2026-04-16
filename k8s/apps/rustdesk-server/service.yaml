@@ -1,0 +1,46 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hbbs
+  namespace: rustdesk
+  labels:
+    app.kubernetes.io/name: rustdesk-server
+    app.kubernetes.io/component: hbbs
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: rustdesk-server
+    app.kubernetes.io/component: hbbs
+  ports:
+    - name: rendezvous
+      port: 21116
+      targetPort: 21116
+      protocol: TCP
+    - name: rendezvous-udp
+      port: 21116
+      targetPort: 21116
+      protocol: UDP
+    - name: nat-test
+      port: 21115
+      targetPort: 21115
+      protocol: UDP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hbbr
+  namespace: rustdesk
+  labels:
+    app.kubernetes.io/name: rustdesk-server
+    app.kubernetes.io/component: hbbr
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: rustdesk-server
+    app.kubernetes.io/component: hbbr
+  ports:
+    - name: relay
+      port: 21117
+      targetPort: 21117
+      protocol: TCP

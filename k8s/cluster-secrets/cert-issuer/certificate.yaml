@@ -1,0 +1,38 @@
+---
+# Wildcard certificate for Traefik (default TLS cert for all ingresses).
+# Created in the traefik namespace so Traefik can reference it directly.
+# Other namespaces that need TLS get their own Certificate resource.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-int-shankyjs-com
+  namespace: traefik
+spec:
+  secretName: wildcard-tls
+  issuerRef:
+    name: selfsigned-ca
+    kind: ClusterIssuer
+  commonName: "*.int.shankyjs.com"
+  dnsNames:
+    - "*.int.shankyjs.com"
+    - "int.shankyjs.com"
+  duration: 8760h # 1 year
+  renewBefore: 720h # 30 days
+---
+# Wildcard certificate for Zot registry namespace
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-int-shankyjs-com
+  namespace: zot
+spec:
+  secretName: wildcard-tls
+  issuerRef:
+    name: selfsigned-ca
+    kind: ClusterIssuer
+  commonName: "*.int.shankyjs.com"
+  dnsNames:
+    - "*.int.shankyjs.com"
+    - "int.shankyjs.com"
+  duration: 8760h # 1 year
+  renewBefore: 720h # 30 days

@@ -1,0 +1,19 @@
+# Managed by Ansible - do not edit manually
+[Unit]
+Description=RustDesk
+Requires=network.target
+After=systemd-user-sessions.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/rustdesk --service
+ExecStop=/usr/bin/pkill -f "rustdesk --"
+PIDFile=/run/rustdesk.pid
+KillMode=mixed
+TimeoutStopSec=30
+User={{ rustdesk_service_user }}
+LimitNOFILE={{ rustdesk_nofile_limit }}
+Environment="PULSE_LATENCY_MSEC=60" "PIPEWIRE_LATENCY=1024/48000"
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,8 @@
+---
+- name: Reload UFW
+  community.general.ufw:
+    state: reloaded
+
+- name: restart ufw
+  ansible.builtin.command: ufw --force enable
+  changed_when: true

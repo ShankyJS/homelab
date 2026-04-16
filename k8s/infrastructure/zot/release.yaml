@@ -54,3 +54,17 @@ spec:
       create: true
       accessModes: ["ReadWriteOnce"]
       storage: 10Gi
+    ingress:
+      enabled: true
+      className: traefik
+      annotations:
+        external-dns.alpha.kubernetes.io/hostname: zot.int.shankyjs.com
+      hosts:
+        - host: zot.int.shankyjs.com
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: wildcard-tls
+          hosts:
+            - zot.int.shankyjs.com

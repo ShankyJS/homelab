@@ -1,0 +1,6 @@
+---
+- name: Install RustDesk
+  ansible.builtin.import_tasks: install.yml
+
+- name: Configure RustDesk
+  ansible.builtin.import_tasks: configure.yml

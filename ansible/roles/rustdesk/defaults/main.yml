@@ -1,0 +1,14 @@
+---
+# RustDesk client role defaults
+
+# RustDesk client version and download URL
+rustdesk_version: "1.4.2"
+rustdesk_deb_url: "https://github.com/rustdesk/rustdesk/releases/download/{{ rustdesk_version }}/rustdesk-{{ rustdesk_version }}-aarch64.deb"
+
+# Xorg dummy display resolution
+rustdesk_display_resolution: "1920x1080"
+rustdesk_display_depth: 24
+
+# Systemd service settings
+rustdesk_service_user: root
+rustdesk_nofile_limit: 100000

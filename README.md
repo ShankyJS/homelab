@@ -111,6 +111,7 @@ make shell                # Open a shell in the Ansible container
 make setup                # Setup vault secrets from template
 make vault-encrypt        # Encrypt the vault file
 make vault-edit           # Edit the encrypted vault file
+make install-ca-cert      # Trust the homelab CA on your machine (macOS/Linux)
 make clean                # Remove the Docker image
 ```
 
@@ -181,6 +182,55 @@ Flux watches the `k8s/` directory in this repo and reconciles changes automatica
 - `k8s/apps/` — Application workloads
 
 To deploy something new, add manifests to `k8s/apps/`, commit, and push. Flux picks it up.
+
+## TLS / Certificate Management
+
+The cluster uses a self-signed CA to issue wildcard certificates for `*.int.shankyjs.com`. cert-manager handles issuance and renewal automatically.
+
+### How the CA was generated
+
+```bash
+# Generate a 4096-bit RSA CA keypair (valid 10 years)
+openssl req -x509 -newkey rsa:4096 -sha256 -nodes \
+  -keyout ca.key -out ca.crt -days 3650 \
+  -subj "/CN=shankyjs-homelab-ca/O=shankyjs-homelab"
+
+# Store both in 1Password (item: ca_key_int_shankyjs_com)
+op item edit ca_key_int_shankyjs_com \
+  "credential[password]=$(cat ca.key)" \
+  "certificate[password]=$(cat ca.crt)"
+
+# Delete the private key from disk — it lives only in 1Password now
+rm ca.key
+```
+
+The public cert is committed at `k8s/certs/ca.crt` for trust distribution. The private key **never** touches the repo.
+
+### How it flows through the cluster
+
+```
+1Password (ca_key_int_shankyjs_com)
+  └─ ExternalSecret (cert-manager/ca-key-secret) ── refreshes every 24h
+       └─ ClusterIssuer (selfsigned-ca)
+            ├─ Certificate (traefik/wildcard-tls)   ── *.int.shankyjs.com, 1yr, auto-renew at 30d
+            └─ Certificate (zot/wildcard-tls)       ── *.int.shankyjs.com, 1yr, auto-renew at 30d
+```
+
+The CA public cert is also distributed as a ConfigMap (`kube-system/homelab-ca-cert`) for containers that need to trust it (e.g. ARC DinD runners pushing to Zot).
+
+### Trusting the CA on your machine
+
+```bash
+# macOS (adds to System Keychain) / Linux (update-ca-certificates)
+scripts/install-ca-cert.sh
+```
+
+### 1Password item layout
+
+| Item | Field | Contents |
+|------|-------|----------|
+| `ca_key_int_shankyjs_com` | `credential` | PEM-encoded CA private key |
+| `ca_key_int_shankyjs_com` | `certificate` | PEM-encoded CA public certificate |
 
 ## Design Decisions
 

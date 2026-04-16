@@ -17,6 +17,7 @@ OP_SA_TOKEN_REF      := op://homelab/1password_sa_jetson_k3s/credential
 OP_SYNCTHING_USER_REF := op://homelab/syncthing_jetson/username
 OP_SYNCTHING_PASS_REF := op://homelab/syncthing_jetson/password
 OP_SYNCTHING_M2_DEVICE_ID_REF := op://homelab/syncthing_jetson/shankyjs-m2-device-id
+OP_TAILSCALE_API_TOKEN_REF := op://homelab/tailscale_api_token_shankyjs/credential
 
 # Secret resolution: env vars > 1Password CLI
 # In CI, set these env vars directly (from OP_SERVICE_ACCOUNT_TOKEN + op CLI or GitHub secrets)
@@ -55,6 +56,11 @@ ifndef SYNCTHING_M2_DEVICE_ID
     SYNCTHING_M2_DEVICE_ID := $(shell op read '$(OP_SYNCTHING_M2_DEVICE_ID_REF)' 2>/dev/null)
   endif
 endif
+ifndef TAILSCALE_API_TOKEN
+  ifneq ($(shell command -v op 2>/dev/null),)
+    TAILSCALE_API_TOKEN := $(shell op read '$(OP_TAILSCALE_API_TOKEN_REF)' 2>/dev/null)
+  endif
+endif
 
 # Docker TTY detection: use -it for interactive terminals, -i only for CI/pipes
 DOCKER_TTY := $(shell [ -t 0 ] && echo "-it" || echo "-i")
@@ -82,12 +88,13 @@ DOCKER_RUN := $(DOCKER) run --rm $(DOCKER_TTY) \
 	-e OP_SA_TOKEN='$(OP_SA_TOKEN)' \
 	-e SYNCTHING_GUI_USER='$(SYNCTHING_GUI_USER)' \
 	-e SYNCTHING_GUI_PASSWORD='$(SYNCTHING_GUI_PASSWORD)' \
-	-e SYNCTHING_M2_DEVICE_ID='$(SYNCTHING_M2_DEVICE_ID)'
+	-e SYNCTHING_M2_DEVICE_ID='$(SYNCTHING_M2_DEVICE_ID)' \
+	-e TAILSCALE_API_TOKEN='$(TAILSCALE_API_TOKEN)'
 
 # Extra ansible-playbook args (used by CI to pass -e ansible_ssh_pass=... etc.)
 ANSIBLE_EXTRA ?=
 
-.PHONY: help build lint deploy deploy-tailscale deploy-k3s deploy-k3s-clean deploy-flux diagnose ping shell k clean
+.PHONY: help build lint deploy deploy-tailscale deploy-tailscale-dns deploy-firewall deploy-k3s deploy-k3s-clean deploy-flux diagnose ping shell k clean install-ca-cert
 
 help: ## Show this help message
 	@echo "Homelab Ansible - Available Commands"
@@ -95,7 +102,7 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Secrets are fetched automatically from 1Password CLI."
-	@echo "In CI, set env vars: BECOME_PASS, GITHUB_TOKEN, TAILSCALE_AUTHKEY, OP_SA_TOKEN, SYNCTHING_GUI_USER, SYNCTHING_GUI_PASSWORD"
+	@echo "In CI, set env vars: BECOME_PASS, GITHUB_TOKEN, TAILSCALE_AUTHKEY, OP_SA_TOKEN, TAILSCALE_API_TOKEN, SYNCTHING_GUI_USER, SYNCTHING_GUI_PASSWORD"
 
 build: ## Build the Ansible Docker image
 	@echo "Building Ansible Docker image..."
@@ -121,6 +128,17 @@ deploy-k3s-clean: build ## Run k3s playbook with clean reinstall
 deploy-flux: build ## Bootstrap FluxCD on the k3s cluster
 	@echo "Running FluxCD bootstrap playbook..."
 	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) flux.yml $(ANSIBLE_EXTRA)
+
+deploy-firewall: build ## Configure host firewall (UFW) on the Jetson
+	@echo "Running firewall playbook..."
+	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) firewall.yml $(ANSIBLE_EXTRA)
+
+deploy-tailscale-dns: build ## Configure Tailscale split DNS for int.shankyjs.com
+	@echo "Running Tailscale DNS playbook..."
+	@$(DOCKER_RUN) $(ANSIBLE_IMAGE) tailscale-dns.yml $(ANSIBLE_EXTRA)
+
+install-ca-cert: ## Install homelab CA cert into local trust store (macOS/Linux)
+	@scripts/install-ca-cert.sh
 
 diagnose: build ## Run networking diagnostics on the Jetson
 	@echo "Running diagnostics..."

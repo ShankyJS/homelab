@@ -16,6 +16,7 @@ common_packages:
   - apt-transport-https
   - ca-certificates
   - gnupg
+  - zsh
 
 # Sysctl settings required for k3s + tailscale exit node
 common_sysctl:

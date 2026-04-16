@@ -5,7 +5,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-client \
     sshpass \
     git \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# Add homelab self-signed CA cert to system trust store
+COPY k8s/certs/ca.crt /usr/local/share/ca-certificates/homelab-ca.crt
+RUN update-ca-certificates
 
 # Install Ansible (pin ansible-core<2.18 for Python 3.8 target support on Ubuntu 20.04)
 # TODO: remove pin after reflashing Jetson to JetPack 6 / Ubuntu 22.04

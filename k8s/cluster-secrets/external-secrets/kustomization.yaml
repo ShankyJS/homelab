@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - cluster-secret-store.yaml
   - external-secrets.yaml
+  - rustdesk-secrets.yaml

@@ -11,3 +11,29 @@ syncthing_user: "{{ ansible_user }}"
 
 # GUI listen address (default: localhost only)
 syncthing_gui_address: "0.0.0.0:8384"
+
+# Synced folder paths that need .stignore files
+# Each entry is an absolute path to a synced folder root
+syncthing_stignore_folders:
+  - "/home/{{ syncthing_user }}/os"
+
+# Patterns to ignore across all synced folders
+syncthing_stignore_patterns:
+  # Terraform
+  - ".terraform"
+  # Node.js
+  - "node_modules"
+  # Python
+  - "__pycache__"
+  - ".venv"
+  - "*.pyc"
+  # Rust
+  - "target"
+  # Go
+  - "vendor"
+  # Build artifacts
+  - ".build"
+  - "dist"
+  # IDE / OS junk
+  - ".DS_Store"
+  - "Thumbs.db"

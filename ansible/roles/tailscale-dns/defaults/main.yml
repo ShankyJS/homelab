@@ -1,0 +1,11 @@
+---
+# Tailscale DNS role defaults
+
+# Domain to configure split DNS for
+tailscale_dns_domain: "int.shankyjs.com"
+
+# Tailscale API base URL
+tailscale_api_url: "https://api.tailscale.com"
+
+# Tailnet name (use "-" for the default tailnet of the API token owner)
+tailscale_tailnet: "-"

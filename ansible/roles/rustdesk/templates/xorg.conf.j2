@@ -1,0 +1,27 @@
+# Managed by Ansible - do not edit manually
+Section "Monitor"
+    Identifier "Dummy Monitor"
+
+    HorizSync 5.0 - 150.0
+    VertRefresh 5.0 - 100.0
+
+    Modeline "1920x1080" 23.53 1920 1952 2040 2072 1080 1106 1108 1135
+    Modeline "1280x720" 27.41 1280 1312 1416 1448 720 737 740 757
+EndSection
+
+Section "Device"
+    Identifier "Dummy VideoCard"
+    Driver "dummy"
+    # (1920 * 1080 * 4) / 1024 = 8100
+    VideoRam 8100
+EndSection
+
+Section "Screen"
+    Identifier "Dummy Screen"
+    Device "Dummy VideoCard"
+    Monitor "Dummy Monitor"
+    SubSection "Display"
+        Depth {{ rustdesk_display_depth }}
+        Modes "{{ rustdesk_display_resolution }}" "1280x720"
+    EndSubSection
+EndSection

@@ -1,0 +1,68 @@
+---
+# Configure Tailscale split DNS so that all devices on the tailnet resolve
+# *.int.shankyjs.com to the Jetson's Tailscale IP address.
+#
+# This uses the Tailscale API to set a custom DNS nameserver for the domain.
+# The nameserver points to the Jetson's Tailscale IP, where CoreDNS (via k3s)
+# serves the records that external-dns manages.
+
+- name: Get Jetson Tailscale IP
+  ansible.builtin.command:
+    cmd: tailscale ip -4
+  register: tailscale_ip_result
+  changed_when: false
+
+- name: Set Jetson Tailscale IP fact
+  ansible.builtin.set_fact:
+    jetson_tailscale_ip: "{{ tailscale_ip_result.stdout | trim }}"
+
+- name: Display Tailscale IP
+  ansible.builtin.debug:
+    msg: "Jetson Tailscale IP: {{ jetson_tailscale_ip }}"
+
+- name: Get current Tailscale DNS settings
+  ansible.builtin.uri:
+    url: "{{ tailscale_api_url }}/api/v2/tailnet/{{ tailscale_tailnet }}/dns/nameservers"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ tailscale_api_token }}"
+    return_content: true
+  register: current_dns
+  delegate_to: localhost
+  become: false
+
+- name: Display current DNS settings
+  ansible.builtin.debug:
+    msg: "Current DNS: {{ current_dns.json }}"
+
+# Set split DNS: route int.shankyjs.com queries to the Jetson's Tailscale IP.
+# The Jetson runs CoreDNS (via k3s) which has records from external-dns.
+- name: Configure split DNS for {{ tailscale_dns_domain }}
+  ansible.builtin.uri:
+    url: "{{ tailscale_api_url }}/api/v2/tailnet/{{ tailscale_tailnet }}/dns/splitdns"
+    method: PATCH
+    headers:
+      Authorization: "Bearer {{ tailscale_api_token }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      "{{ tailscale_dns_domain }}":
+        - "{{ jetson_tailscale_ip }}"
+    status_code: [200]
+  delegate_to: localhost
+  become: false
+
+- name: Verify split DNS configuration
+  ansible.builtin.uri:
+    url: "{{ tailscale_api_url }}/api/v2/tailnet/{{ tailscale_tailnet }}/dns/splitdns"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ tailscale_api_token }}"
+    return_content: true
+  register: split_dns_result
+  delegate_to: localhost
+  become: false
+
+- name: Display split DNS result
+  ansible.builtin.debug:
+    msg: "Split DNS config: {{ split_dns_result.json }}"

@@ -2,7 +2,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  # NOTE: cert-manager operator is NOT listed here — it has its own Flux Kustomization
+  # (k8s/cert-manager.yaml) to ensure CRDs deploy before this layer.
+  # NOTE: cert-issuer (ClusterIssuer, ExternalSecret, Certificate) lives in cluster-secrets
+  # layer because it needs ClusterSecretStore which depends on ESO being ready.
+  - traefik
   - external-secrets
+  - external-dns
   - arc-controller
   - arc-runners
   - zot
+  - certs

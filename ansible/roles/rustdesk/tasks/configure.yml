@@ -1,0 +1,51 @@
+---
+- name: Create /etc/rustdesk directory
+  ansible.builtin.file:
+    path: /etc/rustdesk
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy RustDesk xorg.conf
+  ansible.builtin.template:
+    src: xorg.conf.j2
+    dest: /etc/rustdesk/xorg.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart rustdesk
+
+- name: Deploy RustDesk startwm.sh
+  ansible.builtin.template:
+    src: startwm.sh.j2
+    dest: /etc/rustdesk/startwm.sh
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Restart rustdesk
+
+- name: Deploy RustDesk PAM config
+  ansible.builtin.template:
+    src: rustdesk-pam.j2
+    dest: /etc/pam.d/rustdesk
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy RustDesk systemd service
+  ansible.builtin.template:
+    src: rustdesk.service.j2
+    dest: /etc/systemd/system/rustdesk.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart rustdesk
+
+- name: Enable and start RustDesk service
+  ansible.builtin.systemd:
+    name: rustdesk
+    enabled: true
+    state: started

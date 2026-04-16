@@ -17,7 +17,9 @@
   roles:
     - common
     - kernel-modules
+    - firewall
     - tailscale
     - syncthing
+    - rustdesk
     - k3s
     - flux
