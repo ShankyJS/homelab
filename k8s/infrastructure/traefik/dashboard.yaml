@@ -1,0 +1,21 @@
+---
+# Traefik dashboard exposed at traefik.int.shankyjs.com with TLS.
+# external-dns picks up the hostname annotation and creates the DNS record automatically.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard
+  namespace: traefik
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: traefik.int.shankyjs.com
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`traefik.int.shankyjs.com`)
+      kind: Rule
+      services:
+        - name: api@internal
+          kind: TraefikService
+  tls:
+    secretName: wildcard-tls

@@ -59,10 +59,14 @@ spec:
     # Don't create a LoadBalancer service (we use hostPort)
     service:
       enabled: false
-    # Enable Traefik dashboard on a secure port (optional, internal only)
+    # Expose the API/dashboard but don't create the default IngressRoute
+    # (we create our own with TLS below)
     ingressRoute:
       dashboard:
         enabled: false
+    api:
+      dashboard: true
+      insecure: true
     # Default TLS cert for all ingresses
     tlsStore:
       default:
