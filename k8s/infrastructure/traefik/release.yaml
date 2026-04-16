@@ -53,9 +53,14 @@ spec:
         effect: NoSchedule
       - key: node-role.kubernetes.io/control-plane
         effect: NoSchedule
-    # Use DaemonSet for single-node (ensures one instance on the node)
+    # Single-node: use Deployment with Recreate strategy so rollouts
+    # don't deadlock on hostPort conflicts (DaemonSet can't evict the
+    # old pod while the new one is Pending on the same ports)
     deployment:
-      kind: DaemonSet
+      kind: Deployment
+      replicas: 1
+    updateStrategy:
+      type: Recreate
     # Don't create a LoadBalancer service (we use hostPort)
     service:
       enabled: false
