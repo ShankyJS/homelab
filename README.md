@@ -112,6 +112,7 @@ make setup                # Setup vault secrets from template
 make vault-encrypt        # Encrypt the vault file
 make vault-edit           # Edit the encrypted vault file
 make install-ca-cert      # Trust the homelab CA on your machine (macOS/Linux)
+make kubeconfig-merge     # Merge homelab kubeconfig into ~/.kube/config
 make clean                # Remove the Docker image
 ```
 

@@ -94,7 +94,7 @@ DOCKER_RUN := $(DOCKER) run --rm $(DOCKER_TTY) \
 # Extra ansible-playbook args (used by CI to pass -e ansible_ssh_pass=... etc.)
 ANSIBLE_EXTRA ?=
 
-.PHONY: help build lint deploy deploy-tailscale deploy-tailscale-dns deploy-firewall deploy-k3s deploy-k3s-clean deploy-flux diagnose ping shell k clean install-ca-cert
+.PHONY: help build lint deploy deploy-tailscale deploy-tailscale-dns deploy-firewall deploy-k3s deploy-k3s-clean deploy-flux diagnose ping shell k clean install-ca-cert kubeconfig-merge
 
 help: ## Show this help message
 	@echo "Homelab Ansible - Available Commands"
@@ -165,6 +165,18 @@ clean: ## Remove the Docker image
 	@echo "Removing Ansible Docker image..."
 	@$(DOCKER) rmi $(ANSIBLE_IMAGE) 2>/dev/null || true
 	@echo "Cleanup complete"
+
+kubeconfig-merge: ## Merge homelab kubeconfig into ~/.kube/config (adds or updates)
+	@if [ ! -f kubeconfig/jetson.yaml ]; then \
+		echo "Error: kubeconfig/jetson.yaml not found. Run 'make deploy-k3s' first."; \
+		exit 1; \
+	fi
+	@mkdir -p $(HOME)/.kube
+	@cp $(HOME)/.kube/config $(HOME)/.kube/config.bak 2>/dev/null || true
+	@KUBECONFIG=$(HOME)/.kube/config:$(shell pwd)/kubeconfig/jetson.yaml \
+		kubectl config view --flatten > $(HOME)/.kube/config.merged
+	@mv $(HOME)/.kube/config.merged $(HOME)/.kube/config
+	@echo "Merged kubeconfig/jetson.yaml into ~/.kube/config (backup: ~/.kube/config.bak)"
 
 k: ## Run kubectl against the k3s cluster (usage: make k c="get nodes")
 	@if [ ! -f kubeconfig/jetson.yaml ]; then \
