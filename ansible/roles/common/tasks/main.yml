@@ -66,6 +66,13 @@
     reload: true
   loop: "{{ common_sysctl | dict2items }}"
 
+- name: Disable systemd-resolved stub listener (frees port 53 for k8s_gateway)
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/resolved.conf
+    regexp: '^#?DNSStubListener='
+    line: 'DNSStubListener=no'
+  notify: restart systemd-resolved
+
 - name: Set timezone
   community.general.timezone:
     name: "{{ timezone }}"

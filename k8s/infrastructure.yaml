@@ -1,6 +1,6 @@
 ---
-# Layer 1: Infrastructure — Traefik, external-dns, ESO operator, ARC controller, ARC runners, Zot
-# Depends on cert-manager so CRDs (Certificate, ClusterIssuer) and the CA keypair exist.
+# Layer 1: Infrastructure — Traefik, k8s-gateway, ESO operator, ARC controller, ARC runners, Zot
+# Depends on cert-manager and Gateway API CRDs.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -15,6 +15,7 @@ spec:
     name: flux-system
   dependsOn:
     - name: cert-manager
+    - name: gateway-api-crds
   wait: true
   healthChecks:
     - apiVersion: helm.toolkit.fluxcd.io/v2

@@ -8,7 +8,7 @@ resources:
   # layer because it needs ClusterSecretStore which depends on ESO being ready.
   - traefik
   - external-secrets
-  - external-dns
+  - k8s-gateway
   - arc-controller
   - arc-runners
   - zot

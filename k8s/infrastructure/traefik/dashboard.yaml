@@ -1,21 +1,40 @@
 ---
-# Traefik dashboard exposed at traefik.int.shankyjs.com with TLS.
-# external-dns picks up the hostname annotation and creates the DNS record automatically.
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
+# Service exposing Traefik's dashboard/API port (8080)
+apiVersion: v1
+kind: Service
 metadata:
   name: traefik-dashboard
   namespace: traefik
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: traefik.int.shankyjs.com
 spec:
-  entryPoints:
-    - websecure
-  routes:
-    - match: Host(`traefik.int.shankyjs.com`)
-      kind: Rule
-      services:
-        - name: api@internal
-          kind: TraefikService
+  selector:
+    app.kubernetes.io/instance: traefik-traefik
+    app.kubernetes.io/name: traefik
+  ports:
+    - name: traefik
+      port: 8080
+      targetPort: 8080
+---
+# Ingress for the Traefik dashboard at traefik.int.shankyjs.com.
+# Uses standard Ingress so k8s_gateway can serve DNS for it.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: traefik-dashboard
+  namespace: traefik
+spec:
+  ingressClassName: traefik
   tls:
-    secretName: wildcard-tls
+    - secretName: wildcard-tls
+      hosts:
+        - traefik.int.shankyjs.com
+  rules:
+    - host: traefik.int.shankyjs.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: traefik-dashboard
+                port:
+                  number: 8080

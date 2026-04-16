@@ -39,7 +39,7 @@
 # The Jetson runs CoreDNS (via k3s) which has records from external-dns.
 - name: Configure split DNS for {{ tailscale_dns_domain }}
   ansible.builtin.uri:
-    url: "{{ tailscale_api_url }}/api/v2/tailnet/{{ tailscale_tailnet }}/dns/splitdns"
+    url: "{{ tailscale_api_url }}/api/v2/tailnet/{{ tailscale_tailnet }}/dns/split-dns"
     method: PATCH
     headers:
       Authorization: "Bearer {{ tailscale_api_token }}"
@@ -54,7 +54,7 @@
 
 - name: Verify split DNS configuration
   ansible.builtin.uri:
-    url: "{{ tailscale_api_url }}/api/v2/tailnet/{{ tailscale_tailnet }}/dns/splitdns"
+    url: "{{ tailscale_api_url }}/api/v2/tailnet/{{ tailscale_tailnet }}/dns/split-dns"
     method: GET
     headers:
       Authorization: "Bearer {{ tailscale_api_token }}"
