@@ -22,7 +22,7 @@ rules:
     resources: ["ingresses"]
     verbs: ["get", "watch", "list"]
   - apiGroups: ["traefik.io"]
-    resources: ["ingressroutes"]
+    resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
     verbs: ["get", "watch", "list"]
   - apiGroups: [""]
     resources: ["nodes"]
