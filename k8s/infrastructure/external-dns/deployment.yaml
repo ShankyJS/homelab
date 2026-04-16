@@ -21,6 +21,9 @@ rules:
   - apiGroups: ["extensions", "networking.k8s.io"]
     resources: ["ingresses"]
     verbs: ["get", "watch", "list"]
+  - apiGroups: ["traefik.io"]
+    resources: ["ingressroutes"]
+    verbs: ["get", "watch", "list"]
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["list"]
@@ -68,6 +71,7 @@ spec:
           args:
             - --source=ingress
             - --source=service
+            - --source=traefik-proxy
             - --provider=coredns
             - --domain-filter=int.shankyjs.com
             - --log-level=info
