@@ -59,7 +59,7 @@ spec:
     spec:
       serviceAccountName: external-dns
       nodeSelector:
-        node-role.kubernetes.io/master: ""
+        node-role.kubernetes.io/control-plane: "true"
       tolerations:
         - key: node-role.kubernetes.io/master
           effect: NoSchedule
