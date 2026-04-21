@@ -28,10 +28,6 @@ spec:
     minRunners: 0
     template:
       spec:
-        hostAliases:
-          - ip: "100.88.193.63"
-            hostnames:
-              - "zot.int.shankyjs.com"
         volumes:
           - name: homelab-ca-cert
             configMap:

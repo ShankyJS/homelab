@@ -97,6 +97,10 @@ spec:
                 path: /data/Corefile
                 value: |
                   .:53 {
+                    hosts {
+                      100.88.193.63 zot.int.shankyjs.com
+                      fallthrough
+                    }
                     k8s_gateway int.shankyjs.com {
                       apex k8s-gateway.k8s-gateway
                       ttl 300

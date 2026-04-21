@@ -212,6 +212,27 @@ The public cert is committed at `k8s/certs/ca.crt` for trust distribution. The p
 ```
 1Password (ca_key_int_shankyjs_com)
   └─ ExternalSecret (cert-manager/ca-key-secret) ── refreshes every 24h
+
+## Internal DNS overrides
+
+Some services (like Zot) are reachable via public DNS but must be accessed
+through the internal Traefik IP from inside the cluster. We use k8s-gateway
+to provide a split-horizon override so pods resolve the internal IP.
+
+- Source: `k8s/infrastructure/k8s-gateway/deployment.yaml`
+- Override: `zot.int.shankyjs.com -> 100.88.193.63`
+
+Self-checks:
+
+```
+# Query internal DNS from a pod
+kubectl -n arc-runners exec <pod> -- nslookup zot.int.shankyjs.com
+
+# Validate TLS via the internal IP
+kubectl -n arc-runners exec <pod> -- sh -c \
+  'curl -vk https://zot.int.shankyjs.com/v2/_catalog \
+    --resolve zot.int.shankyjs.com:443:100.88.193.63'
+```
        └─ ClusterIssuer (selfsigned-ca)
             ├─ Certificate (traefik/wildcard-tls)   ── *.int.shankyjs.com, 1yr, auto-renew at 30d
             └─ Certificate (zot/wildcard-tls)       ── *.int.shankyjs.com, 1yr, auto-renew at 30d
