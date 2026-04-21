@@ -63,7 +63,9 @@ spec:
               - |
                 # Create Docker registry cert directory
                 mkdir -p /docker-certs/zot.int.shankyjs.com
+                mkdir -p /docker-certs/zot.int.shankyjs.com:443
                 cp /ca-cert/ca.crt /docker-certs/zot.int.shankyjs.com/ca.crt
+                cp /ca-cert/ca.crt /docker-certs/zot.int.shankyjs.com:443/ca.crt
             volumeMounts:
               - name: homelab-ca-cert
                 mountPath: /ca-cert
