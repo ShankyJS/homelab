@@ -221,12 +221,14 @@ to provide a split-horizon override so pods resolve the internal IP.
 
 - Source: `k8s/infrastructure/k8s-gateway/deployment.yaml`
 - Override: `zot.int.shankyjs.com -> 100.88.193.63`
+- k8s-gateway is set as an upstream resolver for cluster DNS so pods use
+  the override without per-pod `hostAliases`.
 
 Self-checks:
 
 ```
 # Query internal DNS from a pod
-kubectl -n arc-runners exec <pod> -- nslookup zot.int.shankyjs.com
+kubectl -n arc-runners exec <pod> -- getent hosts zot.int.shankyjs.com
 
 # Validate TLS via the internal IP
 kubectl -n arc-runners exec <pod> -- sh -c \

@@ -48,6 +48,8 @@ spec:
     watchedResources:
       - Ingress
       - IngressRoute
+    upstreamNameservers:
+      - "10.43.15.248"
   postRenderers:
     - kustomize:
         patches:
