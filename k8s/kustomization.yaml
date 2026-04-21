@@ -6,6 +6,7 @@ resources:
   - flux-system
   # Flux Kustomization resources that define the reconciliation layers.
   # Actual manifests live in subdirs and are only reconciled by these pointers.
+  - namespaces.yaml
   - cert-manager.yaml
   - gateway-api.yaml
   - infrastructure.yaml

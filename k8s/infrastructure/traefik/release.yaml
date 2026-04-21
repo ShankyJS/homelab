@@ -1,11 +1,6 @@
 ---
 # Traefik Ingress Controller — deployed separately since k3s built-in Traefik is disabled.
 # This gives us full control over the version and configuration.
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: traefik
----
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
