@@ -26,16 +26,6 @@ spec:
     runnerScaleSetName: "jetson-arm64"
     maxRunners: 3
     minRunners: 0
-    containerMode:
-      type: dind
-      # Extra Docker daemon arguments to trust our self-signed CA.
-      # The DinD sidecar uses these as command-line flags.
-      kubernetesModeWorkVolumeClaim:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: "local-path"
-        resources:
-          requests:
-            storage: 1Gi
     template:
       spec:
         volumes:
