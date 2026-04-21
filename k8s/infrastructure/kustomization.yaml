@@ -11,6 +11,7 @@ resources:
   - k8s-gateway
   - arc-controller
   - arc-runners
+  - coredns
   - zot
   - certs
   - reflector

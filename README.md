@@ -216,13 +216,11 @@ The public cert is committed at `k8s/certs/ca.crt` for trust distribution. The p
 ## Internal DNS overrides
 
 Some services (like Zot) are reachable via public DNS but must be accessed
-through the internal Traefik IP from inside the cluster. We use k8s-gateway
+through the internal Traefik IP from inside the cluster. We use CoreDNS
 to provide a split-horizon override so pods resolve the internal IP.
 
-- Source: `k8s/infrastructure/k8s-gateway/deployment.yaml`
+- Source: `k8s/infrastructure/coredns/configmap.yaml`
 - Override: `zot.int.shankyjs.com -> 100.88.193.63`
-- k8s-gateway is set as an upstream resolver for cluster DNS so pods use
-  the override without per-pod `hostAliases`.
 
 Self-checks:
 
