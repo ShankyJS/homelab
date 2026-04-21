@@ -7,6 +7,11 @@ kind: ConfigMap
 metadata:
   name: homelab-ca-cert
   namespace: kube-system
+  annotations:
+    reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+    reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "arc-runners"
+    reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+    reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: "arc-runners"
 data:
   ca.crt: |
     -----BEGIN CERTIFICATE-----

@@ -13,3 +13,4 @@ resources:
   - arc-runners
   - zot
   - certs
+  - reflector
