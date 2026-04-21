@@ -8,15 +8,12 @@ data:
   NodeHosts: |
     192.168.50.31 shankyjs-nvidiaj
     2001:569:7f4b:fd00:7313:5c27:9065:9af9 shankyjs-nvidiaj
+    100.88.193.63 zot.int.shankyjs.com
   Corefile: |
     .:53 {
         errors
         health
         ready
-        hosts {
-            100.88.193.63 zot.int.shankyjs.com
-            fallthrough
-        }
         kubernetes cluster.local in-addr.arpa ip6.arpa {
           pods insecure
           fallthrough in-addr.arpa ip6.arpa
