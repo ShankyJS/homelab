@@ -26,6 +26,53 @@ spec:
     persistence:
       enabled: true
       size: 10Gi
+  initContainers:
+    - name: configure-public-auth
+      image: node:22-alpine
+      imagePullPolicy: IfNotPresent
+      command:
+        - /bin/sh
+        - -ec
+      args:
+        - |
+          CONFIG=/paperclip/instances/default/config.json
+          test -f "$CONFIG"
+          node - "$CONFIG" <<'JS'
+          const fs = require("fs");
+          const configPath = process.argv[2];
+          const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+
+          config.server = {
+            ...config.server,
+            deploymentMode: "authenticated",
+            exposure: "public",
+            bind: "custom",
+            customBindHost: "0.0.0.0",
+            host: "0.0.0.0",
+            port: 3100,
+            allowedHostnames: [
+              "localhost",
+              "127.0.0.1",
+              "paperclip",
+              "paperclip.paperclip",
+              "paperclip.paperclip.svc",
+              "paperclip.paperclip.svc.cluster.local",
+              "paperclip.int.shankyjs.com"
+            ],
+            serveUi: true
+          };
+
+          config.auth = {
+            ...config.auth,
+            baseUrlMode: "explicit",
+            publicBaseUrl: "https://paperclip.int.shankyjs.com"
+          };
+
+          fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
+          JS
+      volumeMounts:
+        - name: paperclip-data
+          mountPath: /paperclip
   networking:
     service:
       type: ClusterIP

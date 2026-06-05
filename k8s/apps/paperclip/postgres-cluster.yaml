@@ -6,6 +6,9 @@ metadata:
   namespace: paperclip
 spec:
   instances: 1
+  podSecurityContext:
+    fsGroup: 26
+    fsGroupChangePolicy: OnRootMismatch
   bootstrap:
     initdb:
       database: paperclip
