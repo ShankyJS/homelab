@@ -11,7 +11,9 @@ resources:
   - k8s-gateway
   - arc-controller
   - arc-runners
+  - cloudnative-pg
   - coredns
   - zot
   - certs
   - reflector
+  - paperclip-operator

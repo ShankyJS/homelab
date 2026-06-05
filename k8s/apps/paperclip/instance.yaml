@@ -1,0 +1,41 @@
+---
+apiVersion: paperclip.inc/v1alpha1
+kind: Instance
+metadata:
+  name: paperclip
+  namespace: paperclip
+spec:
+  image:
+    tag: latest
+  deployment:
+    mode: authenticated
+    exposure: public
+    publicURL: https://paperclip.int.shankyjs.com
+    allowedHostnames:
+      - paperclip.int.shankyjs.com
+  database:
+    mode: external
+    externalURLSecretRef:
+      name: paperclip-db-app
+      key: uri
+  auth:
+    secretRef:
+      name: paperclip-auth
+      key: BETTER_AUTH_SECRET
+  storage:
+    persistence:
+      enabled: true
+      size: 10Gi
+  networking:
+    service:
+      type: ClusterIP
+      port: 3100
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      hosts:
+        - paperclip.int.shankyjs.com
+      tls:
+        - secretName: wildcard-tls
+          hosts:
+            - paperclip.int.shankyjs.com

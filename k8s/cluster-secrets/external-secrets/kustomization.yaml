@@ -4,4 +4,5 @@ kind: Kustomization
 resources:
   - cluster-secret-store.yaml
   - external-secrets.yaml
+  - paperclip-secrets.yaml
   - rustdesk-secrets.yaml

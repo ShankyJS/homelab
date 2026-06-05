@@ -17,12 +17,27 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: cnpg-system
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: eso
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
   name: k8s-gateway
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: paperclip
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: paperclip-operator-system
 ---
 apiVersion: v1
 kind: Namespace

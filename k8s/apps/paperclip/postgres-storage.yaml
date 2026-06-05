@@ -1,0 +1,22 @@
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: paperclip-postgres-hostpath
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: paperclip-postgres-0
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: paperclip-postgres-hostpath
+  hostPath:
+    path: /opt/workspaces/os/paperclip/postgres
+    type: DirectoryOrCreate
