@@ -17,3 +17,6 @@ kubeconfig/
 
 # OS
 .DS_Store
+
+# Local planning notes
+plan.md

@@ -42,6 +42,11 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: remote-pi-relay
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: rustdesk
 ---
 apiVersion: v1

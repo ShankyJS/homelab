@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: remote-pi-relay
+  namespace: remote-pi-relay
+  labels:
+    app.kubernetes.io/name: remote-pi-relay
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: remote-pi-relay
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+      protocol: TCP

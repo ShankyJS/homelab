@@ -1,0 +1,25 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: remote-pi-relay
+  namespace: remote-pi-relay
+  labels:
+    app.kubernetes.io/name: remote-pi-relay
+spec:
+  ingressClassName: traefik
+  tls:
+    - secretName: wildcard-tls
+      hosts:
+        - relay.int.shankyjs.com
+  rules:
+    - host: relay.int.shankyjs.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: remote-pi-relay
+                port:
+                  name: http
