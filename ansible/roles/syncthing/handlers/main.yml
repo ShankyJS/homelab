@@ -3,3 +3,4 @@
   ansible.builtin.systemd:
     name: "syncthing@{{ syncthing_user }}"
     state: restarted
+    daemon_reload: true

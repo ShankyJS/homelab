@@ -1,14 +1,20 @@
 ---
-- name: Build tailscale up command arguments
+- name: Build tailscale command arguments
   ansible.builtin.set_fact:
     tailscale_up_args: >-
       --authkey={{ tailscale_authkey }}
       --operator={{ tailscale_operator }}
-      {% if tailscale_exit_node %}--advertise-exit-node{% endif %}
-      {% if tailscale_advertise_routes | length > 0 %}--advertise-routes={{ tailscale_advertise_routes | join(',') }}{% endif %}
-      {% if tailscale_accept_routes %}--accept-routes{% endif %}
-      {% if tailscale_accept_dns %}--accept-dns{% endif %}
+      --advertise-exit-node={{ tailscale_exit_node | bool | lower }}
+      --advertise-routes={{ tailscale_advertise_routes | join(',') }}
+      --accept-routes={{ tailscale_accept_routes | bool | lower }}
+      --accept-dns={{ tailscale_accept_dns | bool | lower }}
       --reset
+    tailscale_set_args: >-
+      --operator={{ tailscale_operator }}
+      --advertise-exit-node={{ tailscale_exit_node | bool | lower }}
+      --advertise-routes={{ tailscale_advertise_routes | join(',') }}
+      --accept-routes={{ tailscale_accept_routes | bool | lower }}
+      --accept-dns={{ tailscale_accept_dns | bool | lower }}
 
 - name: Check current Tailscale status
   ansible.builtin.command:
@@ -26,3 +32,8 @@
     tailscale_status.rc != 0 or
     (tailscale_status.stdout | from_json).BackendState != 'Running'
   notify: Verify tailscale status
+
+- name: Reconcile Tailscale preferences
+  ansible.builtin.command:
+    cmd: "tailscale set {{ tailscale_set_args }}"
+  changed_when: false

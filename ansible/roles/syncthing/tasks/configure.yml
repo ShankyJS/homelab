@@ -12,6 +12,30 @@
     state: present
     timeout: 30
 
+- name: Ignore regenerable files in synced workspaces
+  ansible.builtin.copy:
+    dest: "{{ item }}/.stignore"
+    content: "{{ syncthing_stignore_patterns | join('\n') }}\n"
+    owner: "{{ syncthing_user }}"
+    group: "{{ syncthing_user }}"
+    mode: "0644"
+  loop: "{{ syncthing_stignore_folders }}"
+
+- name: Create Syncthing systemd override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/syncthing@.service.d
+    state: directory
+    mode: "0755"
+
+- name: Suppress per-file Syncthing logs
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/syncthing@.service.d/log-level.conf
+    content: |
+      [Service]
+      Environment=STLOGLEVEL=WARN
+    mode: "0644"
+  notify: Restart syncthing
+
 - name: Set Syncthing GUI listen address
   become: true
   become_user: "{{ syncthing_user }}"

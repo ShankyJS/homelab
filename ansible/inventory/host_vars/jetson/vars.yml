@@ -10,8 +10,14 @@ lan_gateway: 192.168.50.254
 
 # Tailscale
 tailscale_exit_node: true
+tailscale_accept_dns: false
 tailscale_advertise_routes:
   - "192.168.50.0/24"
+
+# Syncthing
+syncthing_stignore_folders:
+  - /opt/workspaces/os
+  - /opt/workspaces/lifeline
 
 # k3s
 k3s_role: server

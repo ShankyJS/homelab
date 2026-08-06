@@ -13,27 +13,18 @@ syncthing_user: "{{ ansible_user }}"
 syncthing_gui_address: "0.0.0.0:8384"
 
 # Synced folder paths that need .stignore files
-# Each entry is an absolute path to a synced folder root
-syncthing_stignore_folders:
-  - "/home/{{ syncthing_user }}/os"
+syncthing_stignore_folders: []
 
-# Patterns to ignore across all synced folders
+# Regenerable files that should never be synced to the Jetson
 syncthing_stignore_patterns:
-  # Terraform
-  - ".terraform"
-  # Node.js
-  - "node_modules"
-  # Python
-  - "__pycache__"
-  - ".venv"
-  - "*.pyc"
-  # Rust
-  - "target"
-  # Go
-  - "vendor"
-  # Build artifacts
-  - ".build"
-  - "dist"
-  # IDE / OS junk
-  - ".DS_Store"
-  - "Thumbs.db"
+  - "**/.terraform"
+  - "**/node_modules"
+  - "**/__pycache__"
+  - "**/.venv"
+  - "**/*.pyc"
+  - "**/target"
+  - "**/vendor"
+  - "**/.build"
+  - "**/dist"
+  - "**/.DS_Store"
+  - "**/Thumbs.db"
