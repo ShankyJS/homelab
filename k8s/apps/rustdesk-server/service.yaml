@@ -24,7 +24,7 @@ spec:
     - name: nat-test
       port: 21115
       targetPort: 21115
-      protocol: UDP
+      protocol: TCP
 ---
 apiVersion: v1
 kind: Service

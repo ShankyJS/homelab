@@ -38,7 +38,7 @@ spec:
             - name: nat-test
               containerPort: 21115
               hostPort: 21115
-              protocol: UDP
+              protocol: TCP
           volumeMounts:
             - name: data
               mountPath: /root

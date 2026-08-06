@@ -22,7 +22,7 @@ spec:
         kind: HelmRepository
         name: external-secrets
         namespace: eso
-      version: ">=0.10.0"
+      version: "2.8.0"
   install:
     crds: CreateReplace
     remediation:
