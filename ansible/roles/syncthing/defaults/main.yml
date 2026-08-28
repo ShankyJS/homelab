@@ -28,3 +28,4 @@ syncthing_stignore_patterns:
   - "**/dist"
   - "**/.DS_Store"
   - "**/Thumbs.db"
+  - "/youtube"
